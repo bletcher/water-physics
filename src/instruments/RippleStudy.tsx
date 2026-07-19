@@ -7,6 +7,7 @@ import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
 import { Details } from '../components/Details';
+import { drawSun } from '../overlays';
 
 /**
  * Ripple Study — shade the surface directly from its normal. Reflection off the
@@ -38,6 +39,7 @@ export function RippleStudy() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
+    overlay: (c, w, h) => drawSun(c, w, h, lightDeg),
     onFrame: (s, frame) => {
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
@@ -65,6 +67,12 @@ export function RippleStudy() {
         <div className="row">
           <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
           <button onClick={() => sim.clear()}>reset</button>
+          <SimToggles
+            infinite={infinite}
+            onInfinite={() => setInfinite((v) => !v)}
+            paused={paused}
+            onPause={() => setPaused((v) => !v)}
+          />
         </div>
 
         <Details>
@@ -79,12 +87,6 @@ export function RippleStudy() {
           </div>
           <div className="row">
             <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />
-            <SimToggles
-              infinite={infinite}
-              onInfinite={() => setInfinite((v) => !v)}
-              paused={paused}
-              onPause={() => setPaused((v) => !v)}
-            />
           </div>
         </Details>
       </div>

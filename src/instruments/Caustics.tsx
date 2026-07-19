@@ -7,6 +7,8 @@ import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
 import { Details } from '../components/Details';
+import { CausticsCrossSection } from '../components/CausticsCrossSection';
+import { drawSun } from '../overlays';
 
 /**
  * Caustics — sunlight refracted through the moving surface, focused onto the
@@ -26,6 +28,7 @@ export function Caustics() {
   const [rockR, setRockR] = useState(14);
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(true);
+  const [crossSection, setCrossSection] = useState(false);
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
 
   useEffect(() => { sim.c = c; }, [sim, c]);
@@ -47,6 +50,7 @@ export function Caustics() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
+    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg),
     onFrame: (s, frame) => {
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
@@ -64,6 +68,7 @@ export function Caustics() {
           aria-label="Interactive pool floor with light caustics. Tap to drop; drag the rock."
         />
         <div className="hint">tap water to drop · drag finger for a wake · drag the rock to move it</div>
+        {crossSection && <CausticsCrossSection sim={sim} depth={depth} />}
       </div>
 
       <div className="panel">
@@ -73,7 +78,14 @@ export function Caustics() {
         </div>
         <div className="row">
           <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
+          <ToggleButton label="cross-section" pressed={crossSection} onToggle={() => setCrossSection((v) => !v)} />
           <button onClick={() => sim.clear()}>reset</button>
+          <SimToggles
+            infinite={infinite}
+            onInfinite={() => setInfinite((v) => !v)}
+            paused={paused}
+            onPause={() => setPaused((v) => !v)}
+          />
         </div>
 
         <Details>
@@ -91,12 +103,6 @@ export function Caustics() {
           </div>
           <div className="row">
             <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />
-            <SimToggles
-              infinite={infinite}
-              onInfinite={() => setInfinite((v) => !v)}
-              paused={paused}
-              onPause={() => setPaused((v) => !v)}
-            />
           </div>
         </Details>
       </div>

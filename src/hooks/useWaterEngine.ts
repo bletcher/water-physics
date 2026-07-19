@@ -13,6 +13,8 @@ export interface EngineOptions {
   isPaused?: () => boolean;
   /** camera pitch in degrees: 0 = straight down, larger = more oblique */
   getViewAngle?: () => number;
+  /** draw a gizmo over the finished frame (e.g. the sun marker) */
+  overlay?: (ctx: CanvasRenderingContext2D, cw: number, ch: number) => void;
   /**
    * Custom pointer handling (e.g. painting obstacles). Return true if the event
    * was fully handled, to skip the default drop / rock-drag behaviour.
@@ -117,20 +119,24 @@ export function useWaterEngine(
       offCtx.putImageData(img, 0, 0);
       const cw = canvas.width, ch = canvas.height;
       const beta = viewBeta();
-      if (beta === 0) { ctx.drawImage(off, 0, 0, cw, ch); return; }
-      // draw the surface as a receding plane, one horizontal strip per screen row
-      const W = sim.W, H = sim.H, denom = 1 + beta;
-      ctx.fillStyle = '#0e1217';        // --ink, fills the empty corners above the plane
-      ctx.fillRect(0, 0, cw, ch);
-      for (let j = 0; j < ch; j++) {
-        const Yd = ch > 1 ? j / (ch - 1) : 0;
-        const s = (1 + beta * Yd) / denom;
-        const vs = Yd * denom / (1 + beta * Yd);
-        let srcRow = (vs * (H - 1) + 0.5) | 0;
-        if (srcRow < 0) srcRow = 0; else if (srcRow > H - 1) srcRow = H - 1;
-        const destW = s * cw;
-        ctx.drawImage(off, 0, srcRow, W, 1, (cw - destW) * 0.5, j, destW, 1);
+      if (beta === 0) {
+        ctx.drawImage(off, 0, 0, cw, ch);
+      } else {
+        // draw the surface as a receding plane, one horizontal strip per screen row
+        const W = sim.W, H = sim.H, denom = 1 + beta;
+        ctx.fillStyle = '#0e1217';      // --ink, fills the empty corners above the plane
+        ctx.fillRect(0, 0, cw, ch);
+        for (let j = 0; j < ch; j++) {
+          const Yd = ch > 1 ? j / (ch - 1) : 0;
+          const s = (1 + beta * Yd) / denom;
+          const vs = Yd * denom / (1 + beta * Yd);
+          let srcRow = (vs * (H - 1) + 0.5) | 0;
+          if (srcRow < 0) srcRow = 0; else if (srcRow > H - 1) srcRow = H - 1;
+          const destW = s * cw;
+          ctx.drawImage(off, 0, srcRow, W, 1, (cw - destW) * 0.5, j, destW, 1);
+        }
       }
+      optsRef.current.overlay?.(ctx, cw, ch);
     };
     const tick = () => {
       if (!optsRef.current.isPaused?.()) {

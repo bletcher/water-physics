@@ -280,3 +280,166 @@ input[type="range"]:focus-visible {
   outline: 2px solid var(--verdigris);
   outline-offset: 2px;
 }
+
+/* ---- guided lessons ---- */
+.lesson-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.lesson-count {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.lesson-dots {
+  display: flex;
+  gap: 7px;
+}
+
+.lesson-dots .dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+  cursor: pointer;
+}
+
+.lesson-dots .dot:hover {
+  border-color: var(--verdigris);
+}
+
+.lesson-dots .dot.on {
+  background: var(--verdigris);
+  border-color: var(--verdigris);
+}
+
+.lesson-dots .dot:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+.lesson-title {
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 20px;
+  color: #e8eef0;
+  margin-bottom: 8px;
+}
+
+.lesson-body {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text);
+  max-width: 62ch;
+}
+
+.lesson-try {
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--text);
+  margin-top: 12px;
+}
+
+.lesson-try span {
+  color: var(--verdigris);
+  font-weight: 500;
+  margin-right: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+}
+
+.lesson-controls {
+  margin-top: 16px;
+  max-width: 360px;
+}
+
+.lesson-paint {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--verdigris);
+  background: rgba(127, 183, 163, 0.07);
+  border-radius: 0 6px 6px 0;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--text);
+}
+
+.lesson-paint span {
+  display: block;
+  color: var(--verdigris);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.lesson-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+}
+
+.lesson-nav button {
+  font: inherit;
+  font-size: 13px;
+  padding: 8px 18px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--line);
+  cursor: pointer;
+}
+
+.lesson-nav button:hover:not(:disabled) {
+  border-color: var(--verdigris);
+  color: #e8eef0;
+}
+
+.lesson-nav button:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.lesson-nav .lesson-next {
+  background: var(--verdigris);
+  color: var(--ink);
+  border-color: var(--verdigris);
+}
+
+.lesson-nav button:focus-visible {
+  outline: 2px solid var(--verdigris);
+  outline-offset: 2px;
+}
+
+/* ---- caustics cross-section ---- */
+.xsection {
+  margin: 12px 0 0;
+}
+
+.xsection-canvas {
+  width: 100%;
+  display: block;
+  border-radius: 6px;
+  outline: 1px solid var(--line);
+}
+
+.xsection figcaption {
+  font-size: 12px;
+  color: var(--dim);
+  text-align: center;
+  padding-top: 7px;
+}
+
+.xsection figcaption b {
+  color: var(--verdigris);
+  font-weight: 500;
+}

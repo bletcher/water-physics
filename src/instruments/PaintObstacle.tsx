@@ -88,6 +88,12 @@ export function PaintObstacle() {
         <div className="row">
           <button onClick={() => sim.clearMask()}>clear walls</button>
           <button onClick={() => sim.clear()}>reset</button>
+          <SimToggles
+            infinite={infinite}
+            onInfinite={() => setInfinite((v) => !v)}
+            paused={paused}
+            onPause={() => setPaused((v) => !v)}
+          />
         </div>
 
         <Details>
@@ -103,12 +109,6 @@ export function PaintObstacle() {
           </div>
           <div className="row">
             <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
-            <SimToggles
-              infinite={infinite}
-              onInfinite={() => setInfinite((v) => !v)}
-              paused={paused}
-              onPause={() => setPaused((v) => !v)}
-            />
           </div>
         </Details>
       </div>
