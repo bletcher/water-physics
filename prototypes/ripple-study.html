@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ripple Study — a water surface instrument</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0e1217;
+    --panel:#161c24;
+    --line:#232c37;
+    --text:#c8d3d6;
+    --dim:#77848c;
+    --verdigris:#7fb7a3;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--ink);
+    color:var(--text);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    min-height:100vh;
+    display:flex;flex-direction:column;align-items:center;
+  }
+  header{
+    width:100%;max-width:860px;
+    padding:20px 18px 10px;
+  }
+  h1{
+    font-family:"Fraunces",serif;font-weight:600;
+    font-size:clamp(22px,4vw,30px);
+    letter-spacing:.01em;color:#e8eef0;
+  }
+  .sub{color:var(--dim);font-size:13px;margin-top:4px}
+  .stage{
+    width:100%;max-width:860px;padding:8px 18px 4px;
+  }
+  canvas#water{
+    width:100%;display:block;border-radius:6px;
+    touch-action:none;cursor:crosshair;
+    outline:1px solid var(--line);
+  }
+  .hint{
+    font-size:12px;color:var(--dim);
+    padding:8px 2px 0;text-align:right;
+  }
+  .panel{
+    width:100%;max-width:860px;
+    margin:14px 18px 28px;padding:16px 18px 18px;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  }
+  .eq{
+    font-family:"IBM Plex Mono",monospace;font-size:13px;
+    color:var(--verdigris);
+    padding-bottom:12px;border-bottom:1px solid var(--line);margin-bottom:14px;
+    overflow-x:auto;white-space:nowrap;
+  }
+  .eq b{color:#e8eef0;font-weight:400}
+  .controls{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:14px 22px;
+  }
+  .ctl label{
+    display:flex;justify-content:space-between;
+    font-size:12.5px;color:var(--text);margin-bottom:6px;
+  }
+  .ctl label .val{font-family:"IBM Plex Mono",monospace;color:var(--dim)}
+  input[type=range]{
+    width:100%;appearance:none;height:3px;border-radius:2px;
+    background:var(--line);outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none;width:16px;height:16px;border-radius:50%;
+    background:var(--verdigris);border:2px solid var(--ink);cursor:pointer;
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;
+    background:var(--verdigris);border:2px solid var(--ink);cursor:pointer;
+  }
+  input[type=range]:focus-visible{outline:2px solid var(--verdigris);outline-offset:4px}
+  .row{
+    display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;
+  }
+  button{
+    font:inherit;font-size:13px;padding:8px 16px;border-radius:6px;
+    background:transparent;color:var(--text);
+    border:1px solid var(--line);cursor:pointer;
+  }
+  button:hover{border-color:var(--verdigris);color:#e8eef0}
+  button[aria-pressed="true"]{
+    background:var(--verdigris);color:var(--ink);border-color:var(--verdigris);
+  }
+  button:focus-visible{outline:2px solid var(--verdigris);outline-offset:2px}
+</style>
+</head>
+<body>
+<header>
+  <h1>Ripple Study</h1>
+  <div class="sub">damped wave equation on a height field · reflection, diffraction &amp; interference</div>
+</header>
+
+<div class="stage">
+  <canvas id="water" width="360" height="240" aria-label="Interactive water surface. Tap to drop; drag the rock."></canvas>
+  <div class="hint">tap water to drop · drag finger for a wake · drag the rock to move it</div>
+</div>
+
+<div class="panel">
+  <div class="eq" id="eq">∂²h/∂t² = <b>c²</b>∇²h − <b>k</b>·∂h/∂t</div>
+  <div class="controls">
+    <div class="ctl">
+      <label>wave speed c <span class="val" id="vSpeed"></span></label>
+      <input type="range" id="speed" min="0.10" max="0.62" step="0.01" value="0.42">
+    </div>
+    <div class="ctl">
+      <label>damping <span class="val" id="vDamp"></span></label>
+      <input type="range" id="damp" min="0.960" max="0.999" step="0.001" value="0.994">
+    </div>
+    <div class="ctl">
+      <label>drop size <span class="val" id="vSize"></span></label>
+      <input type="range" id="size" min="1.5" max="8" step="0.5" value="3.5">
+    </div>
+    <div class="ctl">
+      <label>rock radius <span class="val" id="vRock"></span></label>
+      <input type="range" id="rock" min="6" max="30" step="1" value="14">
+    </div>
+    <div class="ctl">
+      <label>light angle <span class="val" id="vLight"></span></label>
+      <input type="range" id="light" min="0" max="360" step="5" value="230">
+    </div>
+  </div>
+  <div class="row">
+    <button id="rain" aria-pressed="false">rain</button>
+    <button id="drip" aria-pressed="false">steady drip</button>
+    <button id="clear">still the water</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  // ---- simulation grid ----
+  const W = 240, H = 160;               // sim resolution
+  const N = W * H;
+  let hCurr = new Float32Array(N);
+  let hPrev = new Float32Array(N);
+  let hNext = new Float32Array(N);
+  const rockMask = new Uint8Array(N);
+
+  // parameters (bound to sliders)
+  const P = { c: 0.42, damp: 0.994, dropR: 3.5, rockR: 14, lightDeg: 230 };
+  // rock position in sim coords
+  const rock = { x: W * 0.62, y: H * 0.45 };
+
+  const canvas = document.getElementById('water');
+  const ctx = canvas.getContext('2d');
+  // offscreen buffer at sim resolution, upscaled by drawImage
+  const off = document.createElement('canvas');
+  off.width = W; off.height = H;
+  const offCtx = off.getContext('2d');
+  const img = offCtx.createImageData(W, H);
+  const px = img.data;
+
+  function fitCanvas() {
+    const cssW = canvas.clientWidth || 360;
+    canvas.width = Math.round(cssW * (window.devicePixelRatio > 1 ? 1.5 : 1));
+    canvas.height = Math.round(canvas.width * H / W);
+    ctx.imageSmoothingEnabled = true;
+  }
+  window.addEventListener('resize', fitCanvas);
+
+  function buildRock() {
+    rockMask.fill(0);
+    const r = P.rockR, r2 = r * r;
+    const x0 = Math.max(1, rock.x - r | 0), x1 = Math.min(W - 2, rock.x + r | 0);
+    const y0 = Math.max(1, rock.y - r | 0), y1 = Math.min(H - 2, rock.y + r | 0);
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++) {
+        const dx = x - rock.x, dy = y - rock.y;
+        if (dx * dx + dy * dy <= r2) rockMask[y * W + x] = 1;
+      }
+  }
+
+  function drop(sx, sy, radius, amp) {
+    const r = radius, r2 = r * r;
+    const x0 = Math.max(1, sx - r * 2 | 0), x1 = Math.min(W - 2, sx + r * 2 | 0);
+    const y0 = Math.max(1, sy - r * 2 | 0), y1 = Math.min(H - 2, sy + r * 2 | 0);
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++) {
+        const dx = x - sx, dy = y - sy, d2 = dx * dx + dy * dy;
+        const g = Math.exp(-d2 / r2);          // gaussian bump
+        if (g > 0.01 && !rockMask[y * W + x]) hCurr[y * W + x] -= amp * g;
+      }
+  }
+
+  // ---- physics step: h_next = 2h - h_prev + c²∇²h, then damp ----
+  function step() {
+    const c2 = P.c * P.c, damp = P.damp;
+    for (let y = 1; y < H - 1; y++) {
+      let i = y * W + 1;
+      for (let x = 1; x < W - 1; x++, i++) {
+        if (rockMask[i]) { hNext[i] = 0; continue; }   // Dirichlet: hard reflection
+        const lap = hCurr[i - 1] + hCurr[i + 1] + hCurr[i - W] + hCurr[i + W] - 4 * hCurr[i];
+        hNext[i] = (2 * hCurr[i] - hPrev[i] + c2 * lap) * damp;
+      }
+    }
+    // gently absorbing frame so edges don't ring forever
+    const B = 10;
+    for (let b = 0; b < B; b++) {
+      const f = 0.86 + 0.14 * (b / B);
+      for (let x = 0; x < W; x++) { hNext[b * W + x] *= f; hNext[(H - 1 - b) * W + x] *= f; }
+      for (let y = 0; y < H; y++) { hNext[y * W + b] *= f; hNext[y * W + (W - 1 - b)] *= f; }
+    }
+    const t = hPrev; hPrev = hCurr; hCurr = hNext; hNext = t;
+  }
+
+  // ---- rendering: shade from surface normal ----
+  function render() {
+    const rad = P.lightDeg * Math.PI / 180;
+    // light direction (unit-ish), z up out of screen
+    let lx = Math.cos(rad) * 0.8, ly = Math.sin(rad) * 0.8, lz = 0.55;
+    const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
+
+    for (let y = 1; y < H - 1; y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x, o = i * 4;
+        if (rockMask[i]) {
+          // stone: flat warm gray with a rim toward the light
+          const dx = x - rock.x, dy = y - rock.y;
+          const d = Math.sqrt(dx * dx + dy * dy) / P.rockR;
+          const rim = Math.max(0, -(dx * lx + dy * ly) / (P.rockR || 1)) * 30;
+          const dome = Math.sqrt(Math.max(0, 1 - d * d));
+          const g = 62 + dome * 46 + rim;
+          px[o] = g + 8; px[o + 1] = g + 4; px[o + 2] = g; px[o + 3] = 255;
+          continue;
+        }
+        const gx = (hCurr[i + 1] - hCurr[i - 1]) * 1.6;   // surface slope
+        const gy = (hCurr[i + W] - hCurr[i - W]) * 1.6;
+        const inv = 1 / Math.sqrt(gx * gx + gy * gy + 1);
+        const nx = -gx * inv, ny = -gy * inv, nz = inv;
+
+        const diff = Math.max(0, nx * lx + ny * ly + nz * lz);
+        // cheap specular: sharpen the diffuse lobe
+        const spec = Math.pow(diff, 90) * 235;
+        const h = hCurr[i];
+
+        // deep teal base, lifted by diffuse light and crest height
+        let r = 12 + diff * 34 + h * 26 + spec;
+        let g = 42 + diff * 66 + h * 34 + spec;
+        let b = 58 + diff * 88 + h * 40 + spec;
+        px[o]     = r < 0 ? 0 : r > 255 ? 255 : r;
+        px[o + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
+        px[o + 2] = b < 0 ? 0 : b > 255 ? 255 : b;
+        px[o + 3] = 255;
+      }
+    }
+    offCtx.putImageData(img, 0, 0);
+    ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+  }
+
+  // ---- interaction ----
+  let draggingRock = false, painting = false, lastDropT = 0;
+  function toSim(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
+  }
+  canvas.addEventListener('pointerdown', e => {
+    canvas.setPointerCapture(e.pointerId);
+    const p = toSim(e);
+    const dx = p.x - rock.x, dy = p.y - rock.y;
+    if (dx * dx + dy * dy < (P.rockR + 5) ** 2) { draggingRock = true; }
+    else { painting = true; drop(p.x, p.y, P.dropR, 2.4); }
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', e => {
+    if (!draggingRock && !painting) return;
+    const p = toSim(e);
+    if (draggingRock) {
+      rock.x = Math.min(W - 4, Math.max(4, p.x));
+      rock.y = Math.min(H - 4, Math.max(4, p.y));
+      buildRock();
+    } else if (performance.now() - lastDropT > 26) {   // wake trail
+      drop(p.x, p.y, P.dropR * 0.8, 1.1);
+      lastDropT = performance.now();
+    }
+  });
+  const release = () => { draggingRock = painting = false; };
+  canvas.addEventListener('pointerup', release);
+  canvas.addEventListener('pointercancel', release);
+
+  // ---- controls ----
+  const $ = id => document.getElementById(id);
+  const readouts = () => {
+    $('vSpeed').textContent = P.c.toFixed(2);
+    $('vDamp').textContent  = P.damp.toFixed(3);
+    $('vSize').textContent  = P.dropR.toFixed(1);
+    $('vRock').textContent  = P.rockR + ' px';
+    $('vLight').textContent = P.lightDeg + '°';
+    $('eq').innerHTML =
+      '∂²h/∂t² = <b>(' + P.c.toFixed(2) + ')²</b>∇²h − <b>' +
+      (1 - P.damp).toFixed(3) + '</b>·∂h/∂t';
+  };
+  $('speed').addEventListener('input', e => { P.c = +e.target.value; readouts(); });
+  $('damp').addEventListener('input',  e => { P.damp = +e.target.value; readouts(); });
+  $('size').addEventListener('input',  e => { P.dropR = +e.target.value; readouts(); });
+  $('rock').addEventListener('input',  e => { P.rockR = +e.target.value; buildRock(); readouts(); });
+  $('light').addEventListener('input', e => { P.lightDeg = +e.target.value; readouts(); });
+
+  let raining = false, dripping = false, dripPhase = 0;
+  const toggle = (btn, on) => btn.setAttribute('aria-pressed', on);
+  $('rain').addEventListener('click', e => { raining = !raining; toggle(e.target, raining); });
+  $('drip').addEventListener('click', e => { dripping = !dripping; toggle(e.target, dripping); });
+  $('clear').addEventListener('click', () => { hCurr.fill(0); hPrev.fill(0); });
+
+  // ---- main loop ----
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function frame() {
+    if (raining && Math.random() < 0.10)
+      drop(4 + Math.random() * (W - 8), 4 + Math.random() * (H - 8), 1.5 + Math.random() * 2, 1.6);
+    if (dripping && ++dripPhase % 70 === 0)
+      drop(W * 0.25, H * 0.5, P.dropR, 2.4);   // fixed source: watch rings hit the rock
+    step(); step();                             // two substeps per frame = smoother waves
+    render();
+    requestAnimationFrame(frame);
+  }
+
+  buildRock(); readouts(); fitCanvas();
+  // a first drop so the surface isn't blank
+  drop(W * 0.25, H * 0.5, 4, 2.4);
+  if (reduced) { step(); render(); } else frame();
+})();
+</script>
+</body>
+</html>
