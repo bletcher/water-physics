@@ -1,0 +1,64 @@
+name: Build and Deploy
+
+# Builds the Vite app and ships it to the shared S3 bucket / CloudFront under the
+# /water-physics subpath — same pattern as events-listing. Runs on every push to
+# main, or manually.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Opt JS actions (checkout, setup-node, …) onto Node 24 ahead of GitHub's
+  # default flip. Silences the Node 20 deprecation warning; harmless after.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+  # Subpath this app is served from. MUST match `base` in vite.config.ts.
+  S3_PATH: water-physics
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (typecheck + bundle)
+        run: npm run build
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync dist/ "s3://${{ secrets.S3_BUCKET }}/${S3_PATH}/" \
+            --delete \
+            --cache-control "public,max-age=3600"
+
+      - name: Invalidate CloudFront cache
+        env:
+          CF_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+        run: |
+          if [ -n "$CF_DISTRIBUTION_ID" ]; then
+            aws cloudfront create-invalidation \
+              --distribution-id "$CF_DISTRIBUTION_ID" \
+              --paths "/${S3_PATH}/*"
+            echo "CloudFront cache invalidated for /${S3_PATH}"
+          else
+            echo "No CloudFront distribution ID configured, skipping"
+          fi
