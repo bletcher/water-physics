@@ -19,6 +19,9 @@ npm run dev      # http://localhost:5173
 Other scripts: `npm run build` (typecheck + production bundle), `npm run preview`
 (serve the build), `npm run lint` (oxlint).
 
+Pushing to `main` builds and deploys to S3/CloudFront under `/water-physics` via
+GitHub Actions — see [DEPLOY.md](DEPLOY.md).
+
 ## Instruments
 
 Switch between them with the tabs in the header.
