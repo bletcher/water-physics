@@ -11,6 +11,7 @@ import { Details } from '../components/Details';
 import { drawSun } from '../overlays';
 
 const SWELL_PERIOD = 90;    // frames between incoming swells
+const OBJECT_R = 9;         // radius (grid cells) of a dropped object
 
 /**
  * Shallow water / shoreline — open water on the left shoals to a drawn beach on
@@ -31,6 +32,7 @@ export function ShallowWater() {
   const [lightDeg, setLightDeg] = useState(210);
   const [dropR, setDropR] = useState(3.5);
   const [swell, setSwell] = useState(true);
+  const [tool, setTool] = useState<'water' | 'object'>('water');
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
 
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
@@ -45,8 +47,11 @@ export function ShallowWater() {
     renderer.depthField = depthField;
   }, [sim, renderer, depthField, c2Field, cMax, shoreCurve, curve]);
 
-  // start with a few swells already rolling in — no scattered "drop" seeds
+  // no default circular rock here (objects are painted); start with a few swells
   useEffect(() => {
+    sim.rockR = 0;
+    sim.rock.x = -100;
+    sim.rock.y = -100;
     injectSwell(sim, 12);
     injectSwell(sim, 48);
     injectSwell(sim, 84);
@@ -57,6 +62,11 @@ export function ShallowWater() {
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
     overlay: (c, w, h) => drawSun(c, w, h, lightDeg),
+    onPointer: (s, p) => {
+      if (tool !== 'object') return false; // fall through to the default water drop
+      s.paintMask(p.x, p.y, OBJECT_R, 1);  // place / drag out a rock
+      return true;
+    },
     onFrame: (s, frame) => {
       if (swell && frame % SWELL_PERIOD === 0) injectSwell(s, 8);
     },
@@ -70,16 +80,25 @@ export function ShallowWater() {
           className="water-canvas"
           aria-label="Waves rolling in from the left, shoaling and refracting onto a beach on the right."
         />
-        <div className="hint">open water at left · beach at right · tap to drop</div>
+        <div className="hint">
+          {tool === 'object'
+            ? 'tap or drag to place rocks · waves reflect & bend around them'
+            : 'open water at left · beach at right · tap to drop'}
+        </div>
       </div>
 
       <div className="panel">
+        <div className="row" role="group" aria-label="tap tool">
+          <ToggleButton label="drop water" pressed={tool === 'water'} onToggle={() => setTool('water')} />
+          <ToggleButton label="drop object" pressed={tool === 'object'} onToggle={() => setTool('object')} />
+        </div>
         <div className="controls">
           <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />
           <Slider label="wave speed" value={cMax} display={cMax.toFixed(2)} min={0.2} max={0.6} step={0.01} onChange={setCMax} />
         </div>
         <div className="row">
           <ToggleButton label="incoming swell" pressed={swell} onToggle={() => setSwell((v) => !v)} />
+          <button onClick={() => sim.clearMask()}>clear objects</button>
           <button onClick={() => sim.clear()}>reset</button>
           <SimToggles
             infinite={infinite}
