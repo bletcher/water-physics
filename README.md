@@ -41,14 +41,16 @@ edge scatters differently from a smooth one. The obstacle is just cells clamped
 to zero, so any shape works.
 
 ### Shallow Water
-The bottom shoals from deep water (top) to a beach (bottom). Wave speed follows
-`c ∝ √depth`, so incoming swells **slow, bend toward shore (refraction), shorten,
-and break into foam (shoaling)**. Depth is shaded in; a soft-tilted swell rolls
-in so the refraction is visible.
+Open water on the **left** shoals to a beach on the **right**. Wave speed follows
+`c ∝ √depth`, so swells rolling in from the left **slow, shorten, and break into
+foam (shoaling)**. The **shore curvature** knob bends the coastline, and the
+waves **refract** — bend to wrap around it. Depth is shaded in.
 
-**Shared interactions:** tap the water to drop · drag a finger for a wake · drag
-the rock to move it. **Knobs** each map to a painterly decision (wave speed,
-damping, depth, light angle, …).
+**Every instrument leads with a simple face** — a couple of primary knobs and the
+main actions. A **"details"** disclosure holds the rest: the live equation,
+secondary sliders, and the shared toggles. **Reset** calms the surface back to
+still. **Shared interactions:** tap the water to drop · drag a finger for a wake ·
+drag the rock to move it.
 
 **Shared options on every instrument:**
 
@@ -57,6 +59,9 @@ damping, depth, light angle, …).
   off for reflecting **walls** (a tank / pool). On by default.
 - **freeze** — pauses time so you can study a frozen surface; lighting and other
   render sliders still update live while frozen.
+- **view angle** (in details) — camera pitch from straight-down (0°) to oblique,
+  so you can look across the surface instead of only from above. Taps still land
+  correctly because the pointer is un-projected through the same perspective.
 
 ## The physics
 

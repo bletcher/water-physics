@@ -6,16 +6,39 @@ import { useSimControls } from '../hooks/useSimControls';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
+import { Details } from '../components/Details';
 
-const DMIN = 0.04;          // relative depth at the shoreline
+const SHORE_MAX = 0.96;     // furthest right the waterline reaches (thin beach beyond)
 const SWELL_PERIOD = 90;    // frames between incoming swells
 const SWELL_AMP = 0.9;
-const SWELL_TILT = 0.32;    // wavefront slope, so swell meets the shore at an angle
 
 /**
- * Shallow water / shoreline — the bottom shoals from deep (top) to a beach
- * (bottom). Wave speed follows c ∝ √depth, so swells slow, bend toward shore
- * (refraction), shorten, and break into foam (shoaling).
+ * Inject a swell rolling in from the left — a vertical wavefront whose amplitude
+ * tapers smoothly to zero at the top and bottom. The taper matters: a line source
+ * with hard ends radiates semicircles from each end (the top/bottom "circles"
+ * artefact), so we window it to keep a single clean, continuous front.
+ */
+function injectSwell(s: WaterSim, x0: number) {
+  const { W, H } = s;
+  const margin = Math.max(10, H * 0.2);
+  for (let y = 0; y < H; y++) {
+    let e = 1;
+    if (y < margin) e = y / margin;
+    else if (y > H - 1 - margin) e = (H - 1 - y) / margin;
+    e = e * e * (3 - 2 * e); // smoothstep envelope → no sharp ends
+    if (e <= 0) continue;
+    for (let dx = -3; dx <= 3; dx++) {
+      const xx = x0 + dx;
+      if (xx > 1 && xx < W - 2) s.hCurr[y * W + xx] -= SWELL_AMP * e * Math.exp(-(dx * dx) / 5);
+    }
+  }
+}
+
+/**
+ * Shallow water / shoreline — open water on the left shoals to a drawn beach on
+ * the right. Wave speed follows c ∝ √depth, so swells rolling in from the left
+ * slow, shorten, and break into foam. Curving the shoreline makes them refract —
+ * bend to wrap around the coast.
  */
 export function ShallowWater() {
   const sim = useMemo(() => new WaterSim(), []);
@@ -25,56 +48,58 @@ export function ShallowWater() {
 
   const [cMax, setCMax] = useState(0.5);
   const [damp, setDamp] = useState(0.996);
+  const [curve, setCurve] = useState(0);
   const [shoreCurve, setShoreCurve] = useState(1.4);
   const [lightDeg, setLightDeg] = useState(210);
   const [dropR, setDropR] = useState(3.5);
   const [swell, setSwell] = useState(true);
-  const { infinite, setInfinite, paused, setPaused } = useSimControls(sim);
+  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
 
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
 
-  // (re)build the depth profile and matching wave-speed field
+  // Build the bathymetry: deep water (left) → waterline → dry beach (right).
+  // `curve` bows the waterline per row; `shoreCurve` sets how steeply it shoals.
   useEffect(() => {
     const { W, H } = sim;
     const cm2 = cMax * cMax;
+    // Pin the rightmost point of the shoreline to SHORE_MAX for any curvature, so
+    // the shore always sits as far right as it can (beach stays a thin strip):
+    // for curve>0 the peak is mid-height (bump=0.5), for curve≤0 it's at the edges.
+    const base = SHORE_MAX - Math.max(0, curve) * 0.5;
     for (let y = 0; y < H; y++) {
-      const base = 1 - y / (H - 1);                       // 1 at top (deep) → 0 at bottom
-      const d = DMIN + (1 - DMIN) * Math.pow(Math.max(0, base), shoreCurve);
-      const cc2 = cm2 * d;                                // c² ∝ depth
+      const yc = y / (H - 1) - 0.5;
+      const bump = (0.25 - yc * yc) * 2;             // 0 at top/bottom, 0.5 mid-height
+      let w = base + curve * bump;                   // waterline fraction for this row
+      w = w < 0.1 ? 0.1 : w > 0.98 ? 0.98 : w;
       for (let x = 0; x < W; x++) {
+        const u = x / (W - 1);
+        const d = u <= w
+          ? Math.pow((w - u) / w, shoreCurve)        // water: 1 deep → 0 at waterline
+          : -((u - w) / (1 - w));                    // land: 0 → −1 up the beach
         const i = y * W + x;
         depthField[i] = d;
-        c2Field[i] = cc2;
+        c2Field[i] = cm2 * Math.max(d, 0.02);        // c² ∝ depth (floored so it never stalls hard)
       }
     }
     sim.c2Field = c2Field;
-    sim.c = cMax;                                         // used by the open boundary
+    sim.c = cMax;                                    // used by the open boundary
     renderer.depthField = depthField;
-  }, [sim, renderer, depthField, c2Field, cMax, shoreCurve]);
+  }, [sim, renderer, depthField, c2Field, cMax, shoreCurve, curve]);
 
-  // seed a couple of drops
+  // start with a few swells already rolling in — no scattered "drop" seeds
   useEffect(() => {
-    sim.drop(sim.W * 0.35, sim.H * 0.3, 4, 2.2);
-    sim.drop(sim.W * 0.6, sim.H * 0.25, 3, 1.8);
+    injectSwell(sim, 12);
+    injectSwell(sim, 48);
+    injectSwell(sim, 84);
   }, [sim]);
 
   const canvasRef = useWaterEngine(sim, renderer, {
     getDropSize: () => dropR,
     isPaused: () => paused,
+    getViewAngle: () => viewDeg,
     onFrame: (s, frame) => {
-      if (swell && frame % SWELL_PERIOD === 0) {
-        // inject a broad, tilted swell in the deep water near the top
-        const y0 = 10;
-        for (let x = 6; x < s.W - 6; x++) {
-          const yc = y0 + SWELL_TILT * (x - s.W / 2);
-          for (let dy = -3; dy <= 3; dy++) {
-            const yy = Math.round(yc) + dy;
-            if (yy > 2 && yy < s.H - 2)
-              s.hCurr[yy * s.W + x] -= SWELL_AMP * Math.exp(-(dy * dy) / 5);
-          }
-        }
-      }
+      if (swell && frame % SWELL_PERIOD === 0) injectSwell(s, 8);
     },
   });
 
@@ -84,32 +109,41 @@ export function ShallowWater() {
         <canvas
           ref={canvasRef}
           className="water-canvas"
-          aria-label="Waves shoaling and refracting over a shelving bottom toward a shore."
+          aria-label="Waves rolling in from the left, shoaling and refracting onto a beach on the right."
         />
-        <div className="hint">deep water at top · beach at the bottom · tap to drop</div>
+        <div className="hint">open water at left · beach at right · tap to drop</div>
       </div>
 
       <div className="panel">
-        <div className="eq">
-          c(x,y) = <b>{cMax.toFixed(2)}</b>·√depth · shallow ⇒ <b>slow, refract &amp; shoal</b>
-        </div>
         <div className="controls">
-          <Slider label="max wave speed" value={cMax} display={cMax.toFixed(2)} min={0.2} max={0.6} step={0.01} onChange={setCMax} />
-          <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
-          <Slider label="shore steepness" value={shoreCurve} display={shoreCurve.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setShoreCurve} />
-          <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
-          <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
+          <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />
+          <Slider label="wave speed" value={cMax} display={cMax.toFixed(2)} min={0.2} max={0.6} step={0.01} onChange={setCMax} />
         </div>
         <div className="row">
           <ToggleButton label="incoming swell" pressed={swell} onToggle={() => setSwell((v) => !v)} />
-          <button onClick={() => sim.clear()}>still the water</button>
-          <SimToggles
-            infinite={infinite}
-            onInfinite={() => setInfinite((v) => !v)}
-            paused={paused}
-            onPause={() => setPaused((v) => !v)}
-          />
+          <button onClick={() => sim.clear()}>reset</button>
         </div>
+
+        <Details>
+          <div className="eq">
+            c(x,y) = <b>{cMax.toFixed(2)}</b>·√depth · shallow ⇒ <b>slow, refract &amp; shoal</b>
+          </div>
+          <div className="controls">
+            <Slider label="shore steepness" value={shoreCurve} display={shoreCurve.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setShoreCurve} />
+            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
+            <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
+            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+          </div>
+          <div className="row">
+            <SimToggles
+              infinite={infinite}
+              onInfinite={() => setInfinite((v) => !v)}
+              paused={paused}
+              onPause={() => setPaused((v) => !v)}
+            />
+          </div>
+        </Details>
       </div>
     </>
   );

@@ -11,6 +11,8 @@ export interface EngineOptions {
   substeps?: number;
   /** when true, time is frozen: no stepping or sources, but still renders */
   isPaused?: () => boolean;
+  /** camera pitch in degrees: 0 = straight down, larger = more oblique */
+  getViewAngle?: () => number;
   /**
    * Custom pointer handling (e.g. painting obstacles). Return true if the event
    * was fully handled, to skip the default drop / rock-drag behaviour.
@@ -55,14 +57,30 @@ export function useWaterEngine(
     fit();
     window.addEventListener('resize', fit);
 
+    // ---- viewpoint (oblique camera pitch) ----
+    // The flat surface is drawn as a receding plane: for a screen row at
+    // fraction Yd (0 far/top → 1 near/bottom), horizontal scale s and the sampled
+    // source-row fraction vs are s = (1+βYd)/(1+β), vs = Yd(1+β)/(1+βYd), where
+    // β = (1−k)/k and k = cos(pitch) is the far/near width ratio. β=0 ⇒ top-down.
+    const viewBeta = () => {
+      const deg = optsRef.current.getViewAngle?.() ?? 0;
+      if (deg < 0.5) return 0;
+      const k = Math.max(0.32, Math.cos(deg * Math.PI / 180));
+      return (1 - k) / k;
+    };
+
     // ---- pointer interaction ----
     let draggingRock = false, painting = false, drawing = false, lastDropT = 0;
     const toSim = (e: PointerEvent) => {
       const r = canvas.getBoundingClientRect();
-      return {
-        x: (e.clientX - r.left) / r.width * sim.W,
-        y: (e.clientY - r.top) / r.height * sim.H,
-      };
+      const Xd = (e.clientX - r.left) / r.width;
+      const Yd = (e.clientY - r.top) / r.height;
+      const beta = viewBeta();
+      if (beta === 0) return { x: Xd * sim.W, y: Yd * sim.H };
+      const s = (1 + beta * Yd) / (1 + beta);          // un-project the perspective row
+      const vs = Yd * (1 + beta) / (1 + beta * Yd);
+      const uN = 0.5 + (Xd - 0.5) / s;
+      return { x: uN * sim.W, y: vs * sim.H };
     };
     const onDown = (e: PointerEvent) => {
       canvas.setPointerCapture(e.pointerId);
@@ -97,7 +115,22 @@ export function useWaterEngine(
     const paint = () => {
       renderer.render(sim, img);
       offCtx.putImageData(img, 0, 0);
-      ctx.drawImage(off, 0, 0, canvas.width, canvas.height);
+      const cw = canvas.width, ch = canvas.height;
+      const beta = viewBeta();
+      if (beta === 0) { ctx.drawImage(off, 0, 0, cw, ch); return; }
+      // draw the surface as a receding plane, one horizontal strip per screen row
+      const W = sim.W, H = sim.H, denom = 1 + beta;
+      ctx.fillStyle = '#0e1217';        // --ink, fills the empty corners above the plane
+      ctx.fillRect(0, 0, cw, ch);
+      for (let j = 0; j < ch; j++) {
+        const Yd = ch > 1 ? j / (ch - 1) : 0;
+        const s = (1 + beta * Yd) / denom;
+        const vs = Yd * denom / (1 + beta * Yd);
+        let srcRow = (vs * (H - 1) + 0.5) | 0;
+        if (srcRow < 0) srcRow = 0; else if (srcRow > H - 1) srcRow = H - 1;
+        const destW = s * cw;
+        ctx.drawImage(off, 0, srcRow, W, 1, (cw - destW) * 0.5, j, destW, 1);
+      }
     };
     const tick = () => {
       if (!optsRef.current.isPaused?.()) {

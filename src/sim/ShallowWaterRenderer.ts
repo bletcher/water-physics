@@ -5,12 +5,13 @@ import { shadeStone } from './shade';
 /**
  * Renders water over a varying-depth bottom: deep water reads dark teal, the
  * shallows brighten toward a sandy turquoise, and wave crests break into foam as
- * they shoal near the shore. Pair with a WaterSim whose `c2Field` encodes the
- * same depth (c ∝ √depth) so the waves visibly slow, refract, and shorten.
+ * they shoal near the shore. Cells with depth ≤ 0 are dry beach and draw as sand,
+ * so the shoreline is actually visible. Pair with a WaterSim whose `c2Field`
+ * encodes the same depth (c ∝ √depth) so the waves visibly slow and refract.
  */
 export class ShallowWaterRenderer implements Renderer {
   lightDeg = 210;
-  /** per-cell relative depth in [0,1]: 1 = deep, 0 = shore */
+  /** per-cell depth: >0 water (1 = deep, →0 = shore), ≤0 dry land (−1 = high beach) */
   depthField: Float32Array | null = null;
 
   render(sim: WaterSim, img: ImageData): void {
@@ -28,6 +29,16 @@ export class ShallowWaterRenderer implements Renderer {
         if (rockMask[i]) { shadeStone(px, o, rockMask, i, W, lx, ly); continue; }
 
         const d = depth ? depth[i] : 1;
+        if (d <= 0) {
+          // dry beach: sand, lighter (drier) higher up the beach, with a faint grain
+          const dry = -d < 1 ? -d : 1;
+          const grain = (((x * 13 + y * 7) % 5) - 2) * 2;
+          px[o]     = 150 + (206 - 150) * dry + grain;
+          px[o + 1] = 132 + (190 - 132) * dry + grain;
+          px[o + 2] = 96 + (150 - 96) * dry + grain;
+          px[o + 3] = 255;
+          continue;
+        }
         const gx = (hCurr[i + 1] - hCurr[i - 1]) * 1.6;
         const gy = (hCurr[i + W] - hCurr[i - W]) * 1.6;
         const inv = 1 / Math.sqrt(gx * gx + gy * gy + 1);

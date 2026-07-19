@@ -6,6 +6,7 @@ import { useSimControls } from '../hooks/useSimControls';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
+import { Details } from '../components/Details';
 
 /**
  * Ripple Study — shade the surface directly from its normal. Reflection off the
@@ -22,7 +23,7 @@ export function RippleStudy() {
   const [lightDeg, setLightDeg] = useState(230);
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(false);
-  const { infinite, setInfinite, paused, setPaused } = useSimControls(sim);
+  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
 
   // push scalar params into the engine objects
   useEffect(() => { sim.c = c; }, [sim, c]);
@@ -36,6 +37,7 @@ export function RippleStudy() {
   const canvasRef = useWaterEngine(sim, renderer, {
     getDropSize: () => dropR,
     isPaused: () => paused,
+    getViewAngle: () => viewDeg,
     onFrame: (s, frame) => {
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
@@ -56,27 +58,35 @@ export function RippleStudy() {
       </div>
 
       <div className="panel">
-        <div className="eq">
-          ∂²h/∂t² = <b>({c.toFixed(2)})²</b>∇²h − <b>{(1 - damp).toFixed(3)}</b>·∂h/∂t
-        </div>
         <div className="controls">
           <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} />
           <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
-          <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
-          <Slider label="rock radius" value={rockR} display={`${rockR} px`} min={6} max={30} step={1} onChange={setRockR} />
-          <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
         </div>
         <div className="row">
-          <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />
           <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
-          <button onClick={() => sim.clear()}>still the water</button>
-          <SimToggles
-            infinite={infinite}
-            onInfinite={() => setInfinite((v) => !v)}
-            paused={paused}
-            onPause={() => setPaused((v) => !v)}
-          />
+          <button onClick={() => sim.clear()}>reset</button>
         </div>
+
+        <Details>
+          <div className="eq">
+            ∂²h/∂t² = <b>({c.toFixed(2)})²</b>∇²h − <b>{(1 - damp).toFixed(3)}</b>·∂h/∂t
+          </div>
+          <div className="controls">
+            <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
+            <Slider label="rock radius" value={rockR} display={`${rockR} px`} min={6} max={30} step={1} onChange={setRockR} />
+            <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+          </div>
+          <div className="row">
+            <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />
+            <SimToggles
+              infinite={infinite}
+              onInfinite={() => setInfinite((v) => !v)}
+              paused={paused}
+              onPause={() => setPaused((v) => !v)}
+            />
+          </div>
+        </Details>
       </div>
     </>
   );
