@@ -4,6 +4,8 @@ const RUFFLE = 20;    // ambient across-wind streaks per frame at full wind
 const GUST_MAX = 5;   // cat's paws at full wind
 const DRIFT = 0.9;    // max drift, cells per frame, at full wind
 const SHADOW = 16;    // how far downwind an obstacle shelters the water (cells)
+const CAP = 1.2;      // stop ruffling a cell once it's this agitated — bounds the energy
+const HMAX = 4;       // hard amplitude clamp — safety net against runaway forcing
 
 /** Whitecap intensity for the renderers: foam only once the wind is fresh. */
 export function whitecapFromWind(speed: number): number {
@@ -58,8 +60,8 @@ export class WindField {
     }
 
     // ruffle: ambient everywhere + heavier inside the cat's paws
-    const ambientAmp = 0.05 + speed * 0.18;
-    const gustAmp = 0.12 + speed * 0.3;
+    const ambientAmp = 0.04 + speed * 0.12;
+    const gustAmp = 0.08 + speed * 0.2;
     const n = Math.round(speed * RUFFLE);
     for (let k = 0; k < n; k++) {
       this.streak(sim, 2 + Math.random() * (W - 4), 2 + Math.random() * (H - 4), ambientAmp, ax, ay, wx, wy);
@@ -68,6 +70,13 @@ export class WindField {
       for (let k = 0; k < 5; k++) {
         this.streak(sim, g.x + (Math.random() - 0.5) * 18, g.y + (Math.random() - 0.5) * 18, gustAmp, ax, ay, wx, wy);
       }
+    }
+
+    // safety net: keep the field bounded so continuous forcing can't run away
+    const hc = sim.hCurr;
+    for (let i = 0; i < hc.length; i++) {
+      const v = hc[i];
+      if (v > HMAX) hc[i] = HMAX; else if (v < -HMAX) hc[i] = -HMAX;
     }
   }
 
@@ -79,15 +88,23 @@ export class WindField {
     };
   }
 
-  /** a short across-wind line of dimples → a wavelet with its crest across the wind */
+  /** a short across-wind line of soft, capped stamps → a wavelet with its crest across the wind */
   private streak(sim: WaterSim, x: number, y: number, amp: number, ax: number, ay: number, wx: number, wy: number): void {
     if (this.sheltered(sim, x, y, wx, wy)) return;
+    const W = sim.W, H = sim.H;
+    const hc = sim.hCurr, mask = sim.rockMask;
     const len = 1 + (Math.random() * 3 | 0);
     for (let s = -len; s <= len; s++) {
       const xx = Math.round(x + ax * s), yy = Math.round(y + ay * s);
-      if (xx > 0 && xx < sim.W - 1 && yy > 0 && yy < sim.H - 1 && !sim.rockMask[yy * sim.W + xx]) {
-        sim.hCurr[yy * sim.W + xx] -= amp;
-      }
+      if (xx < 2 || xx > W - 3 || yy < 2 || yy > H - 3) continue;
+      const idx = yy * W + xx;
+      if (mask[idx] || Math.abs(hc[idx]) > CAP) continue; // don't pile onto agitated water
+      // soft stamp (spread to neighbours) so we add resolvable ripples, not grid-scale noise
+      hc[idx] -= amp;
+      hc[idx - 1] -= amp * 0.35;
+      hc[idx + 1] -= amp * 0.35;
+      hc[idx - W] -= amp * 0.35;
+      hc[idx + W] -= amp * 0.35;
     }
   }
 

@@ -42,6 +42,8 @@ export class WaterSim {
    * c ∝ √depth ⇒ c² ∝ depth). When null, the scalar `c` is used everywhere.
    */
   c2Field: Float32Array | null = null;
+  /** 1 = inside the pond shape, 0 = outside; null = the full rectangle */
+  domainMask: Uint8Array | null = null;
   /** scratch for shift(), allocated on first use */
   private _scratch: Float32Array | null = null;
 
@@ -97,6 +99,31 @@ export class WaterSim {
     this.rockMask.fill(0);
   }
 
+  /**
+   * Shape the pond by rounding its corners. `frac` 0 = the full rectangle
+   * (mask cleared), 1 = corners rounded as far as they go (a stadium, or a
+   * circle when W = H). Cells outside the rounded rect become "outside" and the
+   * waves reflect off the curved edge.
+   */
+  setCornerRadius(frac: number): void {
+    if (frac <= 0.001) { this.domainMask = null; return; }
+    const { W, H } = this;
+    if (!this.domainMask || this.domainMask.length !== this.N) this.domainMask = new Uint8Array(this.N);
+    const dm = this.domainMask;
+    const cx = (W - 1) / 2, cy = (H - 1) / 2;
+    const halfW = (W - 2) / 2, halfH = (H - 2) / 2; // 1-cell margin
+    const r = frac * Math.min(halfW, halfH);        // corner radius
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const qx = Math.abs(x - cx) - (halfW - r);
+        const qy = Math.abs(y - cy) - (halfH - r);
+        const ax = qx > 0 ? qx : 0, ay = qy > 0 ? qy : 0;
+        const d = Math.sqrt(ax * ax + ay * ay) + Math.min(Math.max(qx, qy), 0) - r; // rounded-box SDF
+        dm[y * W + x] = d <= 0 ? 1 : 0;
+      }
+    }
+  }
+
   /** Add a gaussian dimple (a drop) centred at (sx, sy). */
   drop(sx: number, sy: number, radius: number, amp: number): void {
     const { W, H, hCurr, rockMask } = this;
@@ -114,12 +141,12 @@ export class WaterSim {
 
   /** Advance one timestep: h_next = (2h − h_prev + c²∇²h)·damp. */
   step(): void {
-    const { W, H, hCurr, hPrev, hNext, rockMask, c2Field } = this;
+    const { W, H, hCurr, hPrev, hNext, rockMask, c2Field, domainMask } = this;
     const scalarC2 = this.c * this.c, damp = this.damp;
     for (let y = 1; y < H - 1; y++) {
       let i = y * W + 1;
       for (let x = 1; x < W - 1; x++, i++) {
-        if (rockMask[i]) { hNext[i] = 0; continue; } // hard reflection
+        if (rockMask[i] || (domainMask !== null && domainMask[i] === 0)) { hNext[i] = 0; continue; } // wall / outside
         const lap = hCurr[i - 1] + hCurr[i + 1] + hCurr[i - W] + hCurr[i + W] - 4 * hCurr[i];
         const c2 = c2Field ? c2Field[i] : scalarC2;
         hNext[i] = (2 * hCurr[i] - hPrev[i] + c2 * lap) * damp;

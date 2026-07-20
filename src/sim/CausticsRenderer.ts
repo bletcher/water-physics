@@ -97,7 +97,7 @@ export class CausticsRenderer implements Renderer {
     this.ensureBuffers(sim.N);
     this.computeCaustics(sim);
 
-    const { W, H, hCurr, rockMask } = sim;
+    const { W, H, hCurr, rockMask, domainMask } = sim;
     const px = img.data;
 
     const { lx, ly, lz } = sunDir(this.lightDeg, this.elevation);
@@ -110,6 +110,7 @@ export class CausticsRenderer implements Renderer {
     for (let y = 1; y < H - 1; y++) {
       for (let x = 1; x < W - 1; x++) {
         const i = y * W + x, o = i * 4;
+        if (domainMask !== null && domainMask[i] === 0) { px[o] = 14; px[o + 1] = 18; px[o + 2] = 23; px[o + 3] = 255; continue; }
         if (rockMask[i]) { shadeStone(px, o, rockMask, i, W, lx, ly); continue; }
         const gx = (hCurr[i + 1] - hCurr[i - 1]) * 0.5;
         const gy = (hCurr[i + W] - hCurr[i - W]) * 0.5;

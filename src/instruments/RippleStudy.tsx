@@ -8,8 +8,10 @@ import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
 import { WindControls } from '../components/WindControls';
+import { ColorPicker } from '../components/ColorPicker';
 import { Details } from '../components/Details';
 import { drawSun, drawWindArrow } from '../overlays';
+import { hexToRgb } from '../color';
 
 /**
  * Ripple Study — shade the surface directly from its normal. Reflection off the
@@ -26,6 +28,9 @@ export function RippleStudy() {
   const [rockR, setRockR] = useState(14);
   const [lightDeg, setLightDeg] = useState(230);
   const [elevation, setElevation] = useState(40);
+  const [primaryColor, setPrimaryColor] = useState('#0c2a3a');
+  const [crestColor, setCrestColor] = useState('#264c62');
+  const [corner, setCorner] = useState(0);
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(false);
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
@@ -36,6 +41,9 @@ export function RippleStudy() {
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
   useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
+  useEffect(() => { renderer.primary = hexToRgb(primaryColor); }, [renderer, primaryColor]);
+  useEffect(() => { renderer.crest = hexToRgb(crestColor); }, [renderer, crestColor]);
+  useEffect(() => { sim.setCornerRadius(corner); }, [sim, corner]);
   useEffect(() => { sim.rockR = rockR; sim.buildRock(); }, [sim, rockR]);
 
   // seed a first drop so the surface isn't blank
@@ -87,6 +95,9 @@ export function RippleStudy() {
             ∂²h/∂t² = <b>({c.toFixed(2)})²</b>∇²h − <b>{(1 - damp).toFixed(3)}</b>·∂h/∂t
           </div>
           <div className="controls">
+            <Slider label="corner shape" value={corner} display={corner === 0 ? 'square' : corner >= 1 ? 'round' : corner.toFixed(2)} min={0} max={1} step={0.02} onChange={setCorner} />
+            <ColorPicker label="water color" value={primaryColor} onChange={setPrimaryColor} />
+            <ColorPicker label="crest color" value={crestColor} onChange={setCrestColor} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="rock radius" value={rockR} display={`${rockR} px`} min={6} max={30} step={1} onChange={setRockR} />
             <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
