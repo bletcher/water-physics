@@ -42,6 +42,8 @@ export class WaterSim {
    * c ∝ √depth ⇒ c² ∝ depth). When null, the scalar `c` is used everywhere.
    */
   c2Field: Float32Array | null = null;
+  /** scratch for shift(), allocated on first use */
+  private _scratch: Float32Array | null = null;
 
   constructor(W = 240, H = 160) {
     this.W = W;
@@ -170,5 +172,29 @@ export class WaterSim {
     this.hCurr.fill(0);
     this.hPrev.fill(0);
     this.hNext.fill(0);
+  }
+
+  /**
+   * Integer-shift the height field by (dx, dy) cells — used to drift the surface
+   * downwind. Exposed upwind edges come in calm; the downwind edge falls off.
+   */
+  shift(dx: number, dy: number): void {
+    if (dx === 0 && dy === 0) return;
+    const { W, H } = this;
+    if (!this._scratch) this._scratch = new Float32Array(this.N);
+    const scratch = this._scratch;
+    const bufs = [this.hCurr, this.hPrev];
+    for (let bi = 0; bi < bufs.length; bi++) {
+      const buf = bufs[bi];
+      scratch.set(buf);
+      for (let y = 0; y < H; y++) {
+        const sy = y - dy;
+        const rowOk = sy >= 0 && sy < H;
+        for (let x = 0; x < W; x++) {
+          const sx = x - dx;
+          buf[y * W + x] = rowOk && sx >= 0 && sx < W ? scratch[sy * W + sx] : 0;
+        }
+      }
+    }
   }
 }

@@ -7,7 +7,7 @@ import { buildShoreFields, injectSwell } from '../sim/shore';
 export type RendererKey = 'ripple' | 'caustics' | 'shallow';
 
 /** Which control(s) a step surfaces while it's on screen. */
-export type LessonControl = 'damping' | 'light' | 'height' | 'curve' | 'view';
+export type LessonControl = 'damping' | 'light' | 'height' | 'curve' | 'view' | 'wind';
 
 export interface LessonContext {
   sim: WaterSim;
@@ -123,6 +123,16 @@ export const LESSONS: LessonStep[] = [
     source: (s, f) => {
       if (f % 80 === 0) { s.drop(s.W * 0.35, s.H * 0.45, 3, 2.0); s.drop(s.W * 0.65, s.H * 0.55, 3, 2.0); }
     },
+  },
+  {
+    id: 'wind',
+    title: 'Wind ruffles the water',
+    body: 'Wind rakes the surface into countless small waves that travel with it, their crests lined up across the wind. Gusts scud through as darker ruffled patches — “cat’s paws” — and a hard wind tears the crests into whitecaps and flattens the mirror.',
+    tryThis: 'Raise the wind and swing its direction. Watch the ripples line up and drift downwind, the gusts race across, and the reflections break up.',
+    painting: 'Let one wind direction organise the whole surface — crests across the wind, texture drifting one way. Drop in a few darker cat’s-paw patches, and add white flecks only where it blows hard.',
+    renderer: 'ripple',
+    controls: ['wind'],
+    configure: (c) => { reset(c.sim); },
   },
   {
     id: 'shore',

@@ -14,6 +14,8 @@ export class ShallowWaterRenderer implements Renderer {
   lightDeg = 210;
   /** height of the sun above the horizon (0° grazing → 90° overhead) */
   elevation = 40;
+  /** wind whitecap intensity (0 = none) */
+  whitecap = 0;
   /** per-cell depth: >0 water (1 = deep, →0 = shore), ≤0 dry land (−1 = high beach) */
   depthField: Float32Array | null = null;
 
@@ -60,6 +62,12 @@ export class ShallowWaterRenderer implements Renderer {
         // whitecaps: crests breaking in the shallows near shore
         const foam = Math.max(0, 0.32 - d) * Math.max(0, h - 0.25) * 7;
         if (foam > 0) { r += foam * 180; g += foam * 185; b += foam * 185; }
+
+        // wind whitecaps: foam on steep crests anywhere once it's blowing hard
+        if (this.whitecap > 0) {
+          const wf = this.whitecap * (h - 0.4);
+          if (wf > 0) { const f = wf * 150; r += f; g += f; b += f; }
+        }
 
         px[o]     = r < 0 ? 0 : r > 255 ? 255 : r;
         px[o + 1] = g < 0 ? 0 : g > 255 ? 255 : g;

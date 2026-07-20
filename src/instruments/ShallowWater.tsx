@@ -2,13 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { WaterSim } from '../sim/WaterSim';
 import { ShallowWaterRenderer } from '../sim/ShallowWaterRenderer';
 import { buildShoreFields, injectSwell } from '../sim/shore';
+import { WindField, whitecapFromWind } from '../sim/wind';
 import { useWaterEngine } from '../hooks/useWaterEngine';
 import { useSimControls } from '../hooks/useSimControls';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
+import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
-import { drawSun } from '../overlays';
+import { drawSun, drawWindArrow } from '../overlays';
 
 const SWELL_PERIOD = 90;    // frames between incoming swells
 const OBJECT_R = 9;         // radius (grid cells) of a dropped object
@@ -24,6 +26,7 @@ export function ShallowWater() {
   const renderer = useMemo(() => new ShallowWaterRenderer(), []);
   const depthField = useMemo(() => new Float32Array(sim.N), [sim]);
   const c2Field = useMemo(() => new Float32Array(sim.N), [sim]);
+  const wind = useMemo(() => new WindField(), []);
 
   const [cMax, setCMax] = useState(0.5);
   const [damp, setDamp] = useState(0.996);
@@ -34,11 +37,12 @@ export function ShallowWater() {
   const [dropR, setDropR] = useState(3.5);
   const [swell, setSwell] = useState(true);
   const [tool, setTool] = useState<'water' | 'object'>('water');
-  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
+  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
 
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
   useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
+  useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
 
   // Build the bathymetry (deep left → waterline → dry beach right) and its
   // matching wave-speed field; `curve` bows the coastline, `shoreCurve` its slope.
@@ -63,13 +67,14 @@ export function ShallowWater() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg, elevation),
+    overlay: (cx, w, h) => { drawSun(cx, w, h, lightDeg, elevation); drawWindArrow(cx, w, h, windDeg, windSpeed); },
     onPointer: (s, p) => {
       if (tool !== 'object') return false; // fall through to the default water drop
       s.paintMask(p.x, p.y, OBJECT_R, 1);  // place / drag out a rock
       return true;
     },
     onFrame: (s, frame) => {
+      wind.update(s, windSpeed, windDeg);
       if (swell && frame % SWELL_PERIOD === 0) injectSwell(s, 8);
     },
   });
@@ -121,6 +126,7 @@ export function ShallowWater() {
             <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
         </Details>
       </div>

@@ -4,10 +4,12 @@ import { RippleRenderer } from '../sim/RippleRenderer';
 import { CausticsRenderer } from '../sim/CausticsRenderer';
 import { ShallowWaterRenderer } from '../sim/ShallowWaterRenderer';
 import { buildShoreFields } from '../sim/shore';
+import { WindField, whitecapFromWind } from '../sim/wind';
 import { useWaterEngine } from '../hooks/useWaterEngine';
 import { Slider } from '../components/Slider';
+import { WindControls } from '../components/WindControls';
 import { CausticsCrossSection } from '../components/CausticsCrossSection';
-import { drawSun } from '../overlays';
+import { drawSun, drawWindArrow } from '../overlays';
 import { LESSONS } from '../lessons/steps';
 import type { LessonContext } from '../lessons/steps';
 
@@ -28,6 +30,7 @@ export function Learn({ onDone }: LearnProps) {
   const shallow = useMemo(() => new ShallowWaterRenderer(), []);
   const depth = useMemo(() => new Float32Array(sim.N), [sim]);
   const c2 = useMemo(() => new Float32Array(sim.N), [sim]);
+  const wind = useMemo(() => new WindField(), []);
   const ctx: LessonContext = useMemo(
     () => ({ sim, ripple, caustics, shallow, depth, c2 }),
     [sim, ripple, caustics, shallow, depth, c2],
@@ -43,6 +46,8 @@ export function Learn({ onDone }: LearnProps) {
   const [elevation, setElevation] = useState(40);
   const [curve, setCurve] = useState(0);
   const [viewDeg, setViewDeg] = useState(0);
+  const [windSpeed, setWindSpeed] = useState(0);
+  const [windDeg, setWindDeg] = useState(40);
 
   // On step change: reset the exposed controls to defaults, then build the scene.
   useEffect(() => {
@@ -51,6 +56,8 @@ export function Learn({ onDone }: LearnProps) {
     setElevation(step.renderer === 'caustics' ? 62 : 40);
     setCurve(0);
     setViewDeg(0);
+    setWindSpeed(step.controls.includes('wind') ? 0.5 : 0);
+    setWindDeg(40);
     step.configure(ctx);
   }, [i, step, ctx]);
 
@@ -67,6 +74,12 @@ export function Learn({ onDone }: LearnProps) {
     shallow.elevation = elevation;
   }, [ripple, caustics, shallow, elevation]);
   useEffect(() => {
+    const wc = whitecapFromWind(windSpeed);
+    ripple.whitecap = wc;
+    caustics.whitecap = wc;
+    shallow.whitecap = wc;
+  }, [ripple, caustics, shallow, windSpeed]);
+  useEffect(() => {
     if (step.renderer !== 'shallow') return;
     buildShoreFields(sim.W, sim.H, depth, c2, { cMax: 0.5, shoreCurve: 1.4, curve });
     sim.c2Field = c2;
@@ -79,8 +92,8 @@ export function Learn({ onDone }: LearnProps) {
   const canvasRef = useWaterEngine(sim, renderer, {
     getDropSize: () => 3.2,
     getViewAngle: () => viewDeg,
-    onFrame: (s, frame) => { step.source?.(s, frame); },
-    overlay: (c, w, h) => { if (showSun) drawSun(c, w, h, lightDeg, elevation); },
+    onFrame: (s, frame) => { wind.update(s, windSpeed, windDeg); step.source?.(s, frame); },
+    overlay: (c, w, h) => { if (showSun) drawSun(c, w, h, lightDeg, elevation); drawWindArrow(c, w, h, windDeg, windSpeed); },
   });
 
   const last = i === LESSONS.length - 1;
@@ -132,6 +145,9 @@ export function Learn({ onDone }: LearnProps) {
             )}
             {step.controls.includes('view') && (
               <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            )}
+            {step.controls.includes('wind') && (
+              <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
             )}
           </div>
         )}

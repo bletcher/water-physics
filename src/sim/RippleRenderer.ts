@@ -13,6 +13,8 @@ export class RippleRenderer implements Renderer {
   lightDeg = 230;
   /** height of the sun above the horizon (0° grazing → 90° overhead) */
   elevation = 40;
+  /** wind whitecap intensity (0 = none) */
+  whitecap = 0;
 
   render(sim: WaterSim, img: ImageData): void {
     const { W, H, hCurr, rockMask } = sim;
@@ -33,9 +35,13 @@ export class RippleRenderer implements Renderer {
         const spec = Math.pow(diff, 90) * 235;
         const h = hCurr[i];
 
-        const r = 12 + diff * 34 + h * 26 + spec;
-        const g = 42 + diff * 66 + h * 34 + spec;
-        const b = 58 + diff * 88 + h * 40 + spec;
+        let r = 12 + diff * 34 + h * 26 + spec;
+        let g = 42 + diff * 66 + h * 34 + spec;
+        let b = 58 + diff * 88 + h * 40 + spec;
+        if (this.whitecap > 0) {
+          const foam = this.whitecap * (h - 0.4);
+          if (foam > 0) { const f = foam * 150; r += f; g += f; b += f; }
+        }
         px[o]     = r < 0 ? 0 : r > 255 ? 255 : r;
         px[o + 1] = g < 0 ? 0 : g > 255 ? 255 : g;
         px[o + 2] = b < 0 ? 0 : b > 255 ? 255 : b;

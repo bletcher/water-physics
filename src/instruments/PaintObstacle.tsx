@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { WaterSim } from '../sim/WaterSim';
 import { RippleRenderer } from '../sim/RippleRenderer';
+import { WindField, whitecapFromWind } from '../sim/wind';
 import { useWaterEngine } from '../hooks/useWaterEngine';
 import { useSimControls } from '../hooks/useSimControls';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
+import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
+import { drawWindArrow } from '../overlays';
 
 type Tool = 'drop' | 'wall' | 'erase';
 
@@ -18,6 +21,7 @@ type Tool = 'drop' | 'wall' | 'erase';
 export function PaintObstacle() {
   const sim = useMemo(() => new WaterSim(), []);
   const renderer = useMemo(() => new RippleRenderer(), []);
+  const wind = useMemo(() => new WindField(), []);
 
   const [c, setC] = useState(0.42);
   const [damp, setDamp] = useState(0.996);
@@ -26,11 +30,12 @@ export function PaintObstacle() {
   const [lightDeg, setLightDeg] = useState(230);
   const [tool, setTool] = useState<Tool>('wall');
   const [dripping, setDripping] = useState(false);
-  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
+  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
 
   useEffect(() => { sim.c = c; }, [sim, c]);
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
+  useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
 
   // no circular rock here: park it offscreen so pointer-drag never grabs it,
   // then seed a small starter wall + a drop so the canvas isn't empty.
@@ -48,12 +53,14 @@ export function PaintObstacle() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
+    overlay: (cx, w, h) => drawWindArrow(cx, w, h, windDeg, windSpeed),
     onPointer: (s, p) => {
       if (tool === 'drop') return false; // fall through to default drop / wake
       s.paintMask(p.x, p.y, brush, tool === 'wall' ? 1 : 0);
       return true;
     },
     onFrame: (s, frame) => {
+      wind.update(s, windSpeed, windDeg);
       if (dripping && frame % 70 === 0) s.drop(s.W * 0.2, s.H * 0.5, dropR, 2.4);
     },
   });
@@ -106,6 +113,7 @@ export function PaintObstacle() {
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
           <div className="row">
             <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />

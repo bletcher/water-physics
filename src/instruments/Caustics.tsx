@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { WaterSim } from '../sim/WaterSim';
 import { CausticsRenderer } from '../sim/CausticsRenderer';
+import { WindField, whitecapFromWind } from '../sim/wind';
 import { useWaterEngine } from '../hooks/useWaterEngine';
 import { useSimControls } from '../hooks/useSimControls';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
+import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
 import { CausticsCrossSection } from '../components/CausticsCrossSection';
-import { drawSun } from '../overlays';
+import { drawSun, drawWindArrow } from '../overlays';
 
 /**
  * Caustics — sunlight refracted through the moving surface, focused onto the
@@ -17,6 +19,7 @@ import { drawSun } from '../overlays';
 export function Caustics() {
   const sim = useMemo(() => new WaterSim(), []);
   const renderer = useMemo(() => new CausticsRenderer(), []);
+  const wind = useMemo(() => new WindField(), []);
 
   const [c, setC] = useState(0.42);
   const [damp, setDamp] = useState(0.995);
@@ -29,7 +32,7 @@ export function Caustics() {
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(true);
   const [crossSection, setCrossSection] = useState(false);
-  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
+  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
 
   useEffect(() => { sim.c = c; }, [sim, c]);
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
@@ -38,6 +41,7 @@ export function Caustics() {
   useEffect(() => { renderer.str = str; }, [renderer, str]);
   useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
+  useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
 
   // seed a few drops so the caustics have something to dance to
   useEffect(() => {
@@ -50,8 +54,9 @@ export function Caustics() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg, elevation),
+    overlay: (cx, w, h) => { drawSun(cx, w, h, lightDeg, elevation); drawWindArrow(cx, w, h, windDeg, windSpeed); },
     onFrame: (s, frame) => {
+      wind.update(s, windSpeed, windDeg);
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
       if (dripping && frame % 70 === 0)
@@ -100,6 +105,7 @@ export function Caustics() {
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="rock radius" value={rockR} display={`${rockR} px`} min={6} max={30} step={1} onChange={setRockR} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
           <div className="row">
             <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />

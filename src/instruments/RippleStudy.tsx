@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { WaterSim } from '../sim/WaterSim';
 import { RippleRenderer } from '../sim/RippleRenderer';
+import { WindField, whitecapFromWind } from '../sim/wind';
 import { useWaterEngine } from '../hooks/useWaterEngine';
 import { useSimControls } from '../hooks/useSimControls';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
+import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
-import { drawSun } from '../overlays';
+import { drawSun, drawWindArrow } from '../overlays';
 
 /**
  * Ripple Study — shade the surface directly from its normal. Reflection off the
@@ -16,6 +18,7 @@ import { drawSun } from '../overlays';
 export function RippleStudy() {
   const sim = useMemo(() => new WaterSim(), []);
   const renderer = useMemo(() => new RippleRenderer(), []);
+  const wind = useMemo(() => new WindField(), []);
 
   const [c, setC] = useState(0.42);
   const [damp, setDamp] = useState(0.994);
@@ -25,13 +28,14 @@ export function RippleStudy() {
   const [elevation, setElevation] = useState(40);
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(false);
-  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
+  const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
 
   // push scalar params into the engine objects
   useEffect(() => { sim.c = c; }, [sim, c]);
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
   useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
+  useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
   useEffect(() => { sim.rockR = rockR; sim.buildRock(); }, [sim, rockR]);
 
   // seed a first drop so the surface isn't blank
@@ -41,8 +45,9 @@ export function RippleStudy() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg, elevation),
+    overlay: (cx, w, h) => { drawSun(cx, w, h, lightDeg, elevation); drawWindArrow(cx, w, h, windDeg, windSpeed); },
     onFrame: (s, frame) => {
+      wind.update(s, windSpeed, windDeg);
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
       if (dripping && frame % 70 === 0)
@@ -87,6 +92,7 @@ export function RippleStudy() {
             <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
             <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
           <div className="row">
             <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />

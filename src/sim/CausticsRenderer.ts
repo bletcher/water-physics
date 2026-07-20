@@ -20,6 +20,7 @@ export class CausticsRenderer implements Renderer {
   str = 0.75;      // caustic contrast
   elevation = 62;  // sun height above the horizon (drives refraction + specular)
   lightDeg = 230;  // sun azimuth (also drives the specular glint)
+  whitecap = 0;    // wind whitecap intensity (0 = none)
 
   private caustic: Float32Array | null = null;
   private cTmp: Float32Array | null = null;
@@ -133,6 +134,11 @@ export class CausticsRenderer implements Renderer {
         const diff = Math.max(0, nx * lx + ny * ly + nz * lz);
         const spec = Math.pow(diff, 80) * 210;
         fr += spec; fg += spec; fb += spec;
+
+        if (this.whitecap > 0) {
+          const foam = this.whitecap * (hCurr[i] - 0.4);
+          if (foam > 0) { const f = foam * 150; fr += f; fg += f; fb += f; }
+        }
 
         px[o]     = fr < 0 ? 0 : fr > 255 ? 255 : fr;
         px[o + 1] = fg < 0 ? 0 : fg > 255 ? 255 : fg;
