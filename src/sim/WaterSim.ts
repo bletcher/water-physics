@@ -1,3 +1,5 @@
+import type { IWaveKernel } from './iwave';
+
 /**
  * WaterSim — a damped 2D wave equation on a height field.
  *
@@ -44,6 +46,10 @@ export class WaterSim {
   c2Field: Float32Array | null = null;
   /** 1 = inside the pond shape, 0 = outside; null = the full rectangle */
   domainMask: Uint8Array | null = null;
+  /** when set, step() evolves with dispersive iWave convolution instead of the Laplacian */
+  iwaveKernel: IWaveKernel | null = null;
+  /** iWave coupling (∝ gravity·dt²); higher = faster waves, ≤ ~4 stays stable */
+  gravity = 1.5;
   /** scratch for shift(), allocated on first use */
   private _scratch: Float32Array | null = null;
 
@@ -141,6 +147,7 @@ export class WaterSim {
 
   /** Advance one timestep: h_next = (2h − h_prev + c²∇²h)·damp. */
   step(): void {
+    if (this.iwaveKernel) { this.stepIWave(); return; }
     const { W, H, hCurr, hPrev, hNext, rockMask, c2Field, domainMask } = this;
     const scalarC2 = this.c * this.c, damp = this.damp;
     for (let y = 1; y < H - 1; y++) {
@@ -154,6 +161,62 @@ export class WaterSim {
     }
     this.applyBoundary();
     // rotate buffers
+    this.hPrev = hCurr;
+    this.hCurr = hNext;
+    this.hNext = hPrev;
+  }
+
+  /**
+   * Dispersive iWave update: h_next = (2h − h_prev − gravity·(G⊛h))·damp, where
+   * G is the dispersion kernel (Fourier symbol ∝ |k|). Obstacle/outside cells are
+   * held at zero, and the convolution reads calm (0) beyond the edge.
+   */
+  private stepIWave(): void {
+    const { W, H, hCurr, hPrev, hNext, rockMask, domainMask } = this;
+    const kernel = this.iwaveKernel!;
+    const P = kernel.P, size = kernel.size, G = kernel.G;
+    const A = this.gravity, damp = this.damp;
+    const HMAX = 5; // hard clamp — a catastrophic backstop against runaway
+    const blocked = (i: number) => rockMask[i] === 1 || (domainMask !== null && domainMask[i] === 0);
+    for (let y = 1; y < H - 1; y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const i = y * W + x;
+        if (blocked(i)) { hNext[i] = 0; continue; }
+        let vd = 0, gRow = 0;
+        for (let kn = -P; kn <= P; kn++, gRow += size) {
+          const sy = y + kn;
+          if (sy < 1 || sy >= H - 1) continue;
+          const rowBase = sy * W;
+          for (let km = -P; km <= P; km++) {
+            const sx = x + km;
+            if (sx < 1 || sx >= W - 1) continue;
+            vd += G[gRow + (km + P)] * hCurr[rowBase + sx];
+          }
+        }
+        let v = (2 * hCurr[i] - hPrev[i] - A * vd) * damp;
+        v = v > HMAX ? HMAX : v < -HMAX ? -HMAX : v;
+        hNext[i] = v;
+      }
+    }
+    // light hyper-viscosity: damp the grid-scale (checkerboard) mode the truncated
+    // kernel can still nudge, without touching the physical mid/long waves.
+    const s = this._scratch ?? (this._scratch = new Float32Array(this.N));
+    s.set(hNext);
+    const eps = 0.04;
+    for (let y = 1; y < H - 1; y++) {
+      let i = y * W + 1;
+      for (let x = 1; x < W - 1; x++, i++) {
+        if (blocked(i)) { hNext[i] = 0; continue; }
+        hNext[i] = s[i] + eps * ((s[i - 1] + s[i + 1] + s[i - W] + s[i + W]) * 0.25 - s[i]);
+      }
+    }
+    // absorbing sponge border so outgoing waves leave instead of reflecting
+    const B = 12;
+    for (let bnd = 0; bnd < B; bnd++) {
+      const f = 0.82 + 0.18 * (bnd / B);
+      for (let x = 0; x < W; x++) { hNext[bnd * W + x] *= f; hNext[(H - 1 - bnd) * W + x] *= f; }
+      for (let y = 0; y < H; y++) { hNext[y * W + bnd] *= f; hNext[y * W + (W - 1 - bnd)] *= f; }
+    }
     this.hPrev = hCurr;
     this.hCurr = hNext;
     this.hNext = hPrev;

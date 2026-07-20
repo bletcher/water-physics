@@ -121,3 +121,56 @@ export function drawWindArrow(
   ctx.fillText(`wind ${Math.round(windSpeed * 100)}%`, cxp, cyp - ch * 0.09);
   ctx.restore();
 }
+
+const KELVIN_HALF = Math.asin(1 / 3); // ≈ 19.47°, the deep-water wake half-angle
+
+/**
+ * Draw the boat and (optionally) the Kelvin wedge guides. Position is normalized
+ * (0–1) in sim space; `angle` is the heading in radians.
+ */
+export function drawBoat(
+  ctx: CanvasRenderingContext2D,
+  cw: number,
+  ch: number,
+  nx: number,
+  ny: number,
+  angle: number,
+  showWedge: boolean,
+): void {
+  const x = nx * cw, y = ny * ch;
+  const scale = Math.min(cw, ch);
+
+  ctx.save();
+  if (showWedge) {
+    const back = angle + Math.PI;
+    const len = scale * 0.85;
+    ctx.strokeStyle = 'rgba(200,220,225,0.28)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([5, 5]);
+    for (const s of [-1, 1]) {
+      const a = back + s * KELVIN_HALF;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + Math.cos(a) * len, y + Math.sin(a) * len);
+      ctx.stroke();
+    }
+    ctx.setLineDash([]);
+  }
+
+  // hull — a small chevron pointing along the heading
+  const R = Math.max(6, scale * 0.02);
+  ctx.translate(x, y);
+  ctx.rotate(angle);
+  ctx.fillStyle = 'rgba(24,28,34,0.92)';
+  ctx.strokeStyle = 'rgba(224,232,236,0.95)';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(R * 1.7, 0);
+  ctx.lineTo(-R, R * 0.85);
+  ctx.lineTo(-R * 0.5, 0);
+  ctx.lineTo(-R, -R * 0.85);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}

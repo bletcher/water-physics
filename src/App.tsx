@@ -5,14 +5,16 @@ import { RippleStudy } from './instruments/RippleStudy';
 import { Caustics } from './instruments/Caustics';
 import { PaintObstacle } from './instruments/PaintObstacle';
 import { ShallowWater } from './instruments/ShallowWater';
+import { Wake } from './instruments/Wake';
 
-type TabId = 'learn' | 'ripple' | 'caustics' | 'paint' | 'shallow';
+type TabId = 'learn' | 'ripple' | 'caustics' | 'paint' | 'shallow' | 'wake';
 
 const INSTRUMENTS: Record<Exclude<TabId, 'learn'>, ComponentType> = {
   ripple: RippleStudy,
   caustics: Caustics,
   paint: PaintObstacle,
   shallow: ShallowWater,
+  wake: Wake,
 };
 
 const TABS: { id: TabId; name: string; blurb: string }[] = [
@@ -21,6 +23,7 @@ const TABS: { id: TabId; name: string; blurb: string }[] = [
   { id: 'caustics', name: 'Caustics', blurb: 'sunlight refracted through the surface onto the pool floor' },
   { id: 'paint', name: 'Paint Obstacle', blurb: 'brush any wall shape and see how it steers the waves' },
   { id: 'shallow', name: 'Shallow Water', blurb: 'waves slow, refract & shoal over a shelving bottom toward shore' },
+  { id: 'wake', name: 'Wake', blurb: 'a moving boat on dispersive deep water — the feathered ~19.5° Kelvin wake' },
 ];
 
 export default function App() {
