@@ -40,6 +40,7 @@ export function Learn({ onDone }: LearnProps) {
   // exposed-control state (only the ones the current step surfaces are shown)
   const [damping, setDamping] = useState(0.994);
   const [lightDeg, setLightDeg] = useState(230);
+  const [elevation, setElevation] = useState(40);
   const [curve, setCurve] = useState(0);
   const [viewDeg, setViewDeg] = useState(0);
 
@@ -47,6 +48,7 @@ export function Learn({ onDone }: LearnProps) {
   useEffect(() => {
     setDamping(0.994);
     setLightDeg(step.renderer === 'shallow' ? 210 : 230);
+    setElevation(step.renderer === 'caustics' ? 62 : 40);
     setCurve(0);
     setViewDeg(0);
     step.configure(ctx);
@@ -59,6 +61,11 @@ export function Learn({ onDone }: LearnProps) {
     caustics.lightDeg = lightDeg;
     shallow.lightDeg = lightDeg;
   }, [ripple, caustics, shallow, lightDeg]);
+  useEffect(() => {
+    ripple.elevation = elevation;
+    caustics.elevation = elevation;
+    shallow.elevation = elevation;
+  }, [ripple, caustics, shallow, elevation]);
   useEffect(() => {
     if (step.renderer !== 'shallow') return;
     buildShoreFields(sim.W, sim.H, depth, c2, { cMax: 0.5, shoreCurve: 1.4, curve });
@@ -73,7 +80,7 @@ export function Learn({ onDone }: LearnProps) {
     getDropSize: () => 3.2,
     getViewAngle: () => viewDeg,
     onFrame: (s, frame) => { step.source?.(s, frame); },
-    overlay: (c, w, h) => { if (showSun) drawSun(c, w, h, lightDeg); },
+    overlay: (c, w, h) => { if (showSun) drawSun(c, w, h, lightDeg, elevation); },
   });
 
   const last = i === LESSONS.length - 1;
@@ -83,7 +90,9 @@ export function Learn({ onDone }: LearnProps) {
       <div className="stage">
         <canvas ref={canvasRef} className="water-canvas" aria-label={step.title} />
         <div className="hint">tap the water to make waves</div>
-        {step.crossSection && <CausticsCrossSection sim={sim} depth={caustics.depth} />}
+        {step.crossSection && (
+          <CausticsCrossSection sim={sim} depth={caustics.depth} elevation={elevation} lightDeg={lightDeg} />
+        )}
       </div>
 
       <div className="panel lesson">
@@ -114,6 +123,9 @@ export function Learn({ onDone }: LearnProps) {
             )}
             {step.controls.includes('light') && (
               <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            )}
+            {step.controls.includes('height') && (
+              <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
             )}
             {step.controls.includes('curve') && (
               <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />

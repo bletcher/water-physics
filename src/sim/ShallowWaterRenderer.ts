@@ -1,6 +1,7 @@
 import type { Renderer } from './types';
 import type { WaterSim } from './WaterSim';
 import { shadeStone } from './shade';
+import { sunDir } from './light';
 
 /**
  * Renders water over a varying-depth bottom: deep water reads dark teal, the
@@ -11,6 +12,8 @@ import { shadeStone } from './shade';
  */
 export class ShallowWaterRenderer implements Renderer {
   lightDeg = 210;
+  /** height of the sun above the horizon (0° grazing → 90° overhead) */
+  elevation = 40;
   /** per-cell depth: >0 water (1 = deep, →0 = shore), ≤0 dry land (−1 = high beach) */
   depthField: Float32Array | null = null;
 
@@ -19,9 +22,7 @@ export class ShallowWaterRenderer implements Renderer {
     const px = img.data;
     const depth = this.depthField;
 
-    const rad = this.lightDeg * Math.PI / 180;
-    let lx = Math.cos(rad) * 0.75, ly = Math.sin(rad) * 0.75, lz = 0.6;
-    const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
+    const { lx, ly, lz } = sunDir(this.lightDeg, this.elevation);
 
     for (let y = 1; y < H - 1; y++) {
       for (let x = 1; x < W - 1; x++) {

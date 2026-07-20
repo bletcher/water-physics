@@ -22,6 +22,7 @@ export function RippleStudy() {
   const [dropR, setDropR] = useState(3.5);
   const [rockR, setRockR] = useState(14);
   const [lightDeg, setLightDeg] = useState(230);
+  const [elevation, setElevation] = useState(40);
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(false);
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg } = useSimControls(sim);
@@ -30,6 +31,7 @@ export function RippleStudy() {
   useEffect(() => { sim.c = c; }, [sim, c]);
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
+  useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { sim.rockR = rockR; sim.buildRock(); }, [sim, rockR]);
 
   // seed a first drop so the surface isn't blank
@@ -39,7 +41,7 @@ export function RippleStudy() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (c, w, h) => drawSun(c, w, h, lightDeg),
+    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg, elevation),
     onFrame: (s, frame) => {
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
@@ -83,6 +85,7 @@ export function RippleStudy() {
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="rock radius" value={rockR} display={`${rockR} px`} min={6} max={30} step={1} onChange={setRockR} />
             <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
           </div>
           <div className="row">

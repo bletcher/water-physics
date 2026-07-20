@@ -6,8 +6,8 @@ import { buildShoreFields, injectSwell } from '../sim/shore';
 
 export type RendererKey = 'ripple' | 'caustics' | 'shallow';
 
-/** Which single control (if any) a step surfaces while it's on screen. */
-export type LessonControl = 'damping' | 'light' | 'curve' | 'view';
+/** Which control(s) a step surfaces while it's on screen. */
+export type LessonControl = 'damping' | 'light' | 'height' | 'curve' | 'view';
 
 export interface LessonContext {
   sim: WaterSim;
@@ -113,12 +113,12 @@ export const LESSONS: LessonStep[] = [
   },
   {
     id: 'light',
-    title: 'Light rides the slope',
-    body: 'You don’t see the height of the water — you see how it tilts. Slopes facing the light catch highlights; slopes facing away fall into shadow.',
-    tryThis: 'Sweep the light around and watch the highlights swing to the other side of each ripple.',
-    painting: 'Put your brightest marks on the light-facing side of each wavelet and your darks on the shadow side — and move them together when the light moves.',
+    title: 'The sun: angle and height',
+    body: 'Highlights sit on the slopes facing the sun. Its compass angle sets which side they land on; its height sets their shape — a high midday sun makes small tight sparkles, a low sun stretches them into long grazing reflections.',
+    tryThis: 'Swing the light angle, then drop the light height and watch the highlights stretch into a low-sun glare. The sun marker shows where the light is.',
+    painting: 'Match the highlight shape to the sun: crisp dots under a high sun, long streaks under a low one — always on the sun-facing side, and move them together when the light moves.',
     renderer: 'ripple',
-    controls: ['light'],
+    controls: ['light', 'height'],
     configure: (c) => { reset(c.sim); },
     source: (s, f) => {
       if (f % 80 === 0) { s.drop(s.W * 0.35, s.H * 0.45, 3, 2.0); s.drop(s.W * 0.65, s.H * 0.55, 3, 2.0); }
@@ -152,7 +152,7 @@ export const LESSONS: LessonStep[] = [
     renderer: 'caustics',
     controls: [],
     crossSection: true,
-    configure: (c) => { reset(c.sim); c.caustics.depth = 18; c.caustics.str = 0.85; c.caustics.sunDeg = 62; },
+    configure: (c) => { reset(c.sim); c.caustics.depth = 18; c.caustics.str = 0.85; c.caustics.elevation = 62; },
     source: (s, f) => { if (f % 80 === 0) s.drop(s.W * 0.5, s.H * 0.45, 3.2, 2.2); },
   },
   {
@@ -163,7 +163,7 @@ export const LESSONS: LessonStep[] = [
     painting: 'From above you read the surface pattern and the caustics; from a low angle you read reflections and the sky. Decide which story your painting tells before you begin.',
     renderer: 'caustics',
     controls: ['view'],
-    configure: (c) => { reset(c.sim); c.caustics.depth = 18; c.caustics.str = 0.85; c.caustics.sunDeg = 62; },
+    configure: (c) => { reset(c.sim); c.caustics.depth = 18; c.caustics.str = 0.85; c.caustics.elevation = 62; },
     source: (s, f) => { if (f % 80 === 0) s.drop(s.W * 0.5, s.H * 0.45, 3.2, 2.2); },
   },
 ];

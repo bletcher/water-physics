@@ -10,6 +10,10 @@ interface Props {
   sim: WaterSim;
   /** water depth (grid cells) — scales how far rays travel before the floor */
   depth: number;
+  /** sun height above the horizon (0° grazing → 90° overhead) */
+  elevation: number;
+  /** sun azimuth — its in-slice component tilts the incoming rays */
+  lightDeg: number;
 }
 
 /**
@@ -18,10 +22,14 @@ interface Props {
  * floor — bright where the surface curves like a lens, dark where it spreads them.
  * This makes the caustic "focusing" visible in a way the top-down view can't.
  */
-export function CausticsCrossSection({ sim, depth }: Props) {
+export function CausticsCrossSection({ sim, depth, elevation, lightDeg }: Props) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const depthRef = useRef(depth);
   depthRef.current = depth;
+  const elRef = useRef(elevation);
+  elRef.current = elevation;
+  const azRef = useRef(lightDeg);
+  azRef.current = lightDeg;
 
   useEffect(() => {
     const canvas = ref.current;
@@ -46,6 +54,12 @@ export function CausticsCrossSection({ sim, depth }: Props) {
       const surfaceY = ch * 0.42;   // still-water level; crests rise, troughs dip
       const floorY = ch * 0.9;
       const D = depthRef.current;
+      const el = elRef.current;
+      const horiz = Math.cos(azRef.current * Math.PI / 180);   // in-slice sun direction
+      const airTan = Math.min(2, 1 / Math.tan(Math.max(6, el) * Math.PI / 180)) * horiz;
+      const sinR = ETA * Math.cos(el * Math.PI / 180);
+      const tanR = sinR / Math.sqrt(1 - sinR * sinR);
+      const sunShift = -tanR * horiz * D * 0.6;   // a low sun slides the whole focus sideways
       const toCX = (x: number) => (x / (W - 1)) * cw;
       const hAt = (x: number) => sim.hCurr[midRow + x];
       const sy = (x: number) => {   // clamped screen y of the surface at column x
@@ -71,13 +85,13 @@ export function CausticsCrossSection({ sim, depth }: Props) {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // incoming sunlight (faint, straight down)
+      // incoming sunlight (faint) — slanted from the sun when it's low
       ctx.strokeStyle = 'rgba(255,240,200,0.10)';
       for (let x = 8; x < W - 8; x += 8) {
-        const cx = toCX(x);
+        const cx = toCX(x), ys = sy(x);
         ctx.beginPath();
-        ctx.moveTo(cx, 0);
-        ctx.lineTo(cx, sy(x));
+        ctx.moveTo(cx + airTan * ys, 0);
+        ctx.lineTo(cx, ys);
         ctx.stroke();
       }
 
@@ -86,7 +100,7 @@ export function CausticsCrossSection({ sim, depth }: Props) {
       ctx.strokeStyle = 'rgba(255,232,175,0.18)';
       for (let x = 4; x < W - 4; x += 2) {
         const slope = (hAt(x + 1) - hAt(x - 1)) * 0.5;
-        const landX = x + BEND * slope * D * RAY_SCALE;
+        const landX = x + BEND * slope * D * RAY_SCALE + sunShift;
         ctx.beginPath();
         ctx.moveTo(toCX(x), sy(x));
         ctx.lineTo(toCX(landX), floorY);

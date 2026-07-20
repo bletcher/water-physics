@@ -1,6 +1,7 @@
 import type { Renderer } from './types';
 import type { WaterSim } from './WaterSim';
 import { shadeStone } from './shade';
+import { sunDir } from './light';
 
 /**
  * Shades the surface directly from its normal: fake diffuse light, a sharp
@@ -8,16 +9,16 @@ import { shadeStone } from './shade';
  * look of the original Ripple Study.
  */
 export class RippleRenderer implements Renderer {
-  /** direction of the sun, in degrees around the pool */
+  /** azimuth of the sun, in degrees around the pool */
   lightDeg = 230;
+  /** height of the sun above the horizon (0° grazing → 90° overhead) */
+  elevation = 40;
 
   render(sim: WaterSim, img: ImageData): void {
     const { W, H, hCurr, rockMask } = sim;
     const px = img.data;
 
-    const rad = this.lightDeg * Math.PI / 180;
-    let lx = Math.cos(rad) * 0.8, ly = Math.sin(rad) * 0.8, lz = 0.55;
-    const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
+    const { lx, ly, lz } = sunDir(this.lightDeg, this.elevation);
 
     for (let y = 1; y < H - 1; y++) {
       for (let x = 1; x < W - 1; x++) {

@@ -22,7 +22,7 @@ export function Caustics() {
   const [damp, setDamp] = useState(0.995);
   const [depth, setDepth] = useState(18);
   const [str, setStr] = useState(0.75);
-  const [sunDeg, setSunDeg] = useState(62);
+  const [elevation, setElevation] = useState(62);
   const [lightDeg, setLightDeg] = useState(230);
   const [dropR, setDropR] = useState(3.5);
   const [rockR, setRockR] = useState(14);
@@ -36,7 +36,7 @@ export function Caustics() {
   useEffect(() => { sim.rockR = rockR; sim.buildRock(); }, [sim, rockR]);
   useEffect(() => { renderer.depth = depth; }, [renderer, depth]);
   useEffect(() => { renderer.str = str; }, [renderer, str]);
-  useEffect(() => { renderer.sunDeg = sunDeg; }, [renderer, sunDeg]);
+  useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
 
   // seed a few drops so the caustics have something to dance to
@@ -50,7 +50,7 @@ export function Caustics() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg),
+    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg, elevation),
     onFrame: (s, frame) => {
       if (raining && Math.random() < 0.10)
         s.drop(4 + Math.random() * (s.W - 8), 4 + Math.random() * (s.H - 8), 1.5 + Math.random() * 2, 1.6);
@@ -68,7 +68,7 @@ export function Caustics() {
           aria-label="Interactive pool floor with light caustics. Tap to drop; drag the rock."
         />
         <div className="hint">tap water to drop · drag finger for a wake · drag the rock to move it</div>
-        {crossSection && <CausticsCrossSection sim={sim} depth={depth} />}
+        {crossSection && <CausticsCrossSection sim={sim} depth={depth} elevation={elevation} lightDeg={lightDeg} />}
       </div>
 
       <div className="panel">
@@ -93,7 +93,7 @@ export function Caustics() {
             floor light ∝ Σ refracted rays · Snell <b>n=1.33</b> · absorb <b>e<sup>−{(depth * 0.01).toFixed(2)}·c</sup></b>
           </div>
           <div className="controls">
-            <Slider label="sun height" value={sunDeg} display={`${sunDeg}°`} min={8} max={90} step={1} onChange={setSunDeg} />
+            <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
             <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
             <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} />
             <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />

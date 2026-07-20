@@ -30,6 +30,7 @@ export function ShallowWater() {
   const [curve, setCurve] = useState(0);
   const [shoreCurve, setShoreCurve] = useState(1.4);
   const [lightDeg, setLightDeg] = useState(210);
+  const [elevation, setElevation] = useState(40);
   const [dropR, setDropR] = useState(3.5);
   const [swell, setSwell] = useState(true);
   const [tool, setTool] = useState<'water' | 'object'>('water');
@@ -37,6 +38,7 @@ export function ShallowWater() {
 
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
+  useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
 
   // Build the bathymetry (deep left → waterline → dry beach right) and its
   // matching wave-speed field; `curve` bows the coastline, `shoreCurve` its slope.
@@ -61,7 +63,7 @@ export function ShallowWater() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (c, w, h) => drawSun(c, w, h, lightDeg),
+    overlay: (cx, w, h) => drawSun(cx, w, h, lightDeg, elevation),
     onPointer: (s, p) => {
       if (tool !== 'object') return false; // fall through to the default water drop
       s.paintMask(p.x, p.y, OBJECT_R, 1);  // place / drag out a rock
@@ -116,6 +118,7 @@ export function ShallowWater() {
             <Slider label="shore steepness" value={shoreCurve} display={shoreCurve.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setShoreCurve} />
             <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
             <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
           </div>

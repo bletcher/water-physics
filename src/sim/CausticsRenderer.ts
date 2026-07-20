@@ -1,6 +1,7 @@
 import type { Renderer } from './types';
 import type { WaterSim } from './WaterSim';
 import { shadeStone } from './shade';
+import { sunDir } from './light';
 
 const ETA = 1.0 / 1.33;   // air → water refractive index ratio
 const BEND = 1 - ETA;     // small-angle horizontal bend of a refracted ray ≈ 0.248
@@ -17,7 +18,7 @@ const BEND = 1 - ETA;     // small-angle horizontal bend of a refracted ray ≈ 
 export class CausticsRenderer implements Renderer {
   depth = 18;      // water depth, in grid cells (drives refraction offset + tint)
   str = 0.75;      // caustic contrast
-  sunDeg = 62;     // sun elevation above the horizon
+  elevation = 62;  // sun height above the horizon (drives refraction + specular)
   lightDeg = 230;  // sun azimuth (also drives the specular glint)
 
   private caustic: Float32Array | null = null;
@@ -39,7 +40,7 @@ export class CausticsRenderer implements Renderer {
     // sun tilt via Snell: elevation θ → incidence (90−θ) from vertical,
     // sin(refracted) = ETA·cos(θ); horizontal offset per unit depth = tan(refracted).
     const az = this.lightDeg * Math.PI / 180;
-    const sinR = ETA * Math.cos(this.sunDeg * Math.PI / 180);
+    const sinR = ETA * Math.cos(this.elevation * Math.PI / 180);
     const tanR = sinR / Math.sqrt(1 - sinR * sinR);
     const tx = Math.cos(az) * tanR, ty = Math.sin(az) * tanR;
 
@@ -98,9 +99,7 @@ export class CausticsRenderer implements Renderer {
     const { W, H, hCurr, rockMask } = sim;
     const px = img.data;
 
-    const rad = this.lightDeg * Math.PI / 180;
-    let lx = Math.cos(rad) * 0.7, ly = Math.sin(rad) * 0.7, lz = 0.62;
-    const ll = Math.hypot(lx, ly, lz); lx /= ll; ly /= ll; lz /= ll;
+    const { lx, ly, lz } = sunDir(this.lightDeg, this.elevation);
 
     // Beer–Lambert absorption: red is lost first, then green, then blue
     const kd = this.depth * 0.010;
