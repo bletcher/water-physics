@@ -25,6 +25,8 @@ body {
   font-family: "IBM Plex Sans", system-ui, sans-serif;
   height: 100vh;
   overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* ============================================================
@@ -55,7 +57,7 @@ body {
 .app.adjust-open:not(.awake) .panel { opacity: 0.5; }
 
 /* brand — quiet, top-left */
-.brand { position: fixed; top: clamp(15px, 3vw, 28px); left: clamp(16px, 3vw, 32px); z-index: 6; }
+.brand { position: fixed; top: calc(clamp(15px, 3vw, 28px) + env(safe-area-inset-top)); left: calc(clamp(16px, 3vw, 32px) + env(safe-area-inset-left)); z-index: 6; }
 .brand h1 {
   font-family: "Fraunces", serif; font-weight: 500;
   font-size: clamp(17px, 2.3vw, 22px); letter-spacing: 0.01em; color: var(--pearl);
@@ -67,7 +69,7 @@ body {
 
 /* first-run hint, self-dismissing */
 .run-hint {
-  position: fixed; top: clamp(15px, 3vw, 28px); left: 50%; transform: translateX(-50%); z-index: 8;
+  position: fixed; top: calc(clamp(15px, 3vw, 28px) + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%); z-index: 8;
   background: var(--glass); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--edge); border-radius: 999px; padding: 9px 16px;
   font-size: 13px; color: var(--pearl); box-shadow: 0 12px 40px -18px rgba(0,0,0,0.8);
@@ -79,8 +81,10 @@ body {
 /* ---- Guide panel (right) ---- */
 .guide {
   position: fixed; top: 0; right: 0; height: 100%; z-index: 7;
-  width: min(360px, 84vw); padding: clamp(24px, 4vw, 44px) clamp(20px, 3vw, 34px);
+  width: min(360px, 84vw);
+  padding: calc(clamp(24px, 4vw, 44px) + env(safe-area-inset-top)) calc(clamp(20px, 3vw, 34px) + env(safe-area-inset-right)) calc(clamp(24px, 4vw, 44px) + env(safe-area-inset-bottom));
   display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  overflow-y: auto;
   background: linear-gradient(270deg, rgba(9,12,16,0.86), rgba(9,12,16,0.34) 82%, transparent);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
 }
@@ -99,7 +103,7 @@ body {
 
 /* ---- persistent bar (always legible affordance) ---- */
 .bar {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: clamp(13px, 2.2vw, 20px); z-index: 9;
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(clamp(13px, 2.2vw, 20px) + env(safe-area-inset-bottom)); z-index: 9;
   display: flex; align-items: center; gap: 12px;
   background: var(--glass); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
   border: 1px solid var(--edge); border-radius: 999px; padding: 7px 8px 7px 16px;
@@ -125,8 +129,10 @@ body {
 /* ---- Rooms panel (left) — the switcher between the course and the tools ---- */
 .rooms {
   position: fixed; top: 0; left: 0; height: 100%; z-index: 7;
-  width: min(320px, 84vw); padding: clamp(24px, 4vw, 44px) clamp(20px, 2.6vw, 30px);
+  width: min(320px, 84vw);
+  padding: calc(clamp(24px, 4vw, 44px) + env(safe-area-inset-top)) clamp(20px, 2.6vw, 30px) calc(clamp(24px, 4vw, 44px) + env(safe-area-inset-bottom)) calc(clamp(20px, 2.6vw, 30px) + env(safe-area-inset-left));
   display: flex; flex-direction: column; justify-content: center; gap: 10px;
+  overflow-y: auto;
   background: linear-gradient(90deg, rgba(9,12,16,0.9), rgba(9,12,16,0.4) 82%, transparent);
   backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
 }
@@ -151,7 +157,7 @@ body {
 
 /* ---- Adjust sheet = the instrument's control panel ---- */
 .panel {
-  position: fixed; left: 50%; bottom: 74px; z-index: 8;
+  position: fixed; left: 50%; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 8;
   transform: translate(-50%, calc(100% + 90px));
   width: min(720px, 94vw); max-height: 62vh; overflow-y: auto;
   padding: 18px 20px 20px;
@@ -166,7 +172,7 @@ body {
 
 /* caustics cross-section floats above the bar (behind the Adjust sheet) */
 .xsection {
-  position: fixed; left: 50%; transform: translateX(-50%); bottom: 74px; z-index: 7;
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 7;
   width: min(560px, 92vw); margin: 0;
   background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--edge); border-radius: 12px; padding: 8px 10px;
@@ -519,4 +525,40 @@ input[type="range"]:focus-visible {
 .xsection figcaption b {
   color: var(--verdigris);
   font-weight: 500;
+}
+
+/* ============================================================
+   Mobile — narrow / touch screens. Desktop layout is untouched;
+   these only kick in below the breakpoints.
+   ============================================================ */
+
+/* Narrow phones: the bottom bar's one nowrap row can't hold the room
+   caption alongside every button, so drop the caption (the brand + guide
+   already name the room) and tighten spacing so nothing clips off-screen. */
+@media (max-width: 560px) {
+  .bar {
+    gap: 8px;
+    padding: 7px 8px 7px 12px;
+    max-width: calc(100vw - 16px);
+  }
+  .bar .caption,
+  .bar .b-sep { display: none; }
+  /* comfortable touch targets */
+  .bar .b-rooms,
+  .bar .b-act { min-height: 40px; }
+
+  .run-hint {
+    max-width: min(92vw, 460px);
+    white-space: normal;
+    text-align: center;
+    border-radius: 16px;
+    line-height: 1.4;
+  }
+}
+
+/* Short / landscape screens: the side panels center their content and would
+   otherwise clip it with no way to scroll — pin to the top and let them scroll. */
+@media (max-height: 560px) {
+  .guide,
+  .rooms { justify-content: flex-start; }
 }
