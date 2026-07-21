@@ -8,10 +8,13 @@ import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
 import { WindControls } from '../components/WindControls';
+import { SunDial } from '../components/SunDial';
 import { Details } from '../components/Details';
 import { CausticsCrossSection } from '../components/CausticsCrossSection';
 import { drawSun, drawWindArrow } from '../overlays';
+import { hexToRgb } from '../color';
 import { useGuide } from '../shell/GuideContext';
+import { usePalette, floorFromWater } from '../shell/PaletteContext';
 
 /**
  * Caustics — sunlight refracted through the moving surface, focused onto the
@@ -22,12 +25,22 @@ export function Caustics() {
   const renderer = useMemo(() => new CausticsRenderer(), []);
   const wind = useMemo(() => new WindField(), []);
   const { setGuide } = useGuide();
+  const { palette, valueStudy } = usePalette();
   useEffect(() => {
     setGuide({
-      eyebrow: 'Caustics',
-      title: 'Light on the pool floor',
+      eyebrow: 'Light on the Floor',
+      title: 'The dancing net of light',
       seeing: 'Sunlight refracts through the moving surface and focuses into the dancing net on the floor.',
-      painting: 'Paint caustics as bright, wobbling, broken lines — brightest where the water curves.',
+      painting: 'Block in the dark floor first, then lay the bright net on top — wobbling, broken lines, brightest where the surface curves. Turn on “value study” to strip it down to just those flat light-and-dark shapes.',
+      deeper: 'Light bends as it crosses from air into water — refraction, Snell’s law, with water’s index about 1.33. The wavy surface acts like a shifting lens: where it bulges it spreads light out, where it dips it concentrates it into bright lines on the floor. Those focal lines are the caustics, and they dance because the lens keeps moving. Deeper water also absorbs more light, so colour drains from red toward blue.',
+      formula: {
+        expr: 'n₁ sinθ₁ = n₂ sinθ₂',
+        terms: [
+          { sym: 'n₁, n₂', desc: 'refractive index of air (1.0) and water (1.33)' },
+          { sym: 'θ₁', desc: 'ray angle in the air, from straight down' },
+          { sym: 'θ₂', desc: 'ray angle once it is in the water' },
+        ],
+      },
     });
     return () => setGuide(null);
   }, [setGuide]);
@@ -43,6 +56,7 @@ export function Caustics() {
   const [raining, setRaining] = useState(false);
   const [dripping, setDripping] = useState(true);
   const [crossSection, setCrossSection] = useState(false);
+  const [isolate, setIsolate] = useState(false);
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
 
   useEffect(() => { sim.c = c; }, [sim, c]);
@@ -53,6 +67,8 @@ export function Caustics() {
   useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
   useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
+  useEffect(() => { renderer.isolate = isolate; }, [renderer, isolate]);
+  useEffect(() => { renderer.floor = floorFromWater(hexToRgb(palette.primary)); }, [renderer, palette]);
 
   // seed a few drops so the caustics have something to dance to
   useEffect(() => {
@@ -65,6 +81,7 @@ export function Caustics() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
+    valueStudy: () => valueStudy,
     overlay: (cx, w, h) => { drawSun(cx, w, h, lightDeg, elevation); drawWindArrow(cx, w, h, windDeg, windSpeed); },
     onFrame: (s, frame) => {
       wind.update(s, windSpeed, windDeg);
@@ -83,7 +100,11 @@ export function Caustics() {
           className="water-canvas"
           aria-label="Interactive pool floor with light caustics. Tap to drop; drag the rock."
         />
-        <div className="hint">tap water to drop · drag finger for a wake · drag the rock to move it</div>
+        <div className="hint">
+          {isolate
+            ? 'light only · just the net the surface casts — no floor, no colour'
+            : 'tap water to drop · drag finger for a wake · drag the rock to move it'}
+        </div>
         {crossSection && <CausticsCrossSection sim={sim} depth={depth} elevation={elevation} lightDeg={lightDeg} />}
       </div>
 
@@ -95,6 +116,7 @@ export function Caustics() {
         <div className="row">
           <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
           <ToggleButton label="cross-section" pressed={crossSection} onToggle={() => setCrossSection((v) => !v)} />
+          <ToggleButton label="light only" pressed={isolate} onToggle={() => setIsolate((v) => !v)} />
           <button onClick={() => sim.clear()}>reset</button>
           <SimToggles
             infinite={infinite}
@@ -109,8 +131,7 @@ export function Caustics() {
             floor light ∝ Σ refracted rays · Snell <b>n=1.33</b> · absorb <b>e<sup>−{(depth * 0.01).toFixed(2)}·c</sup></b>
           </div>
           <div className="controls">
-            <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
-            <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
             <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} />
             <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />

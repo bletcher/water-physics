@@ -7,9 +7,12 @@ import { useWaterEngine } from '../hooks/useWaterEngine';
 import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { WindControls } from '../components/WindControls';
+import { SunDial } from '../components/SunDial';
 import { Details } from '../components/Details';
 import { drawSun, drawBoat, drawWindArrow } from '../overlays';
+import { hexToRgb } from '../color';
 import { useGuide } from '../shell/GuideContext';
+import { usePalette } from '../shell/PaletteContext';
 
 /**
  * Wake — a moving source on the dispersive (iWave) surface. Deep-water dispersion
@@ -23,12 +26,22 @@ export function Wake() {
   const kernel = useMemo(() => makeIWaveKernel(5, 2.0), []);
   const wind = useMemo(() => new WindField(), []);
   const { setGuide } = useGuide();
+  const { palette, valueStudy } = usePalette();
   useEffect(() => {
     setGuide({
       eyebrow: 'Wake',
       title: 'A boat and its wake',
       seeing: 'The boat wanders on its own — drag to steer it. Its trailing waves fill the ~19.5° Kelvin wedge.',
       painting: 'A boat, duck, or swan wake always opens at that same angle, whatever the speed.',
+      deeper: 'A boat is a moving source of ripples on deep water, where long waves travel faster than short ones (dispersion, ω = √(g·k)). Add up all the wavelets it leaves behind and — by a stationary-phase argument — they always reinforce along a wedge of the same half-angle, about 19.5° (the Kelvin angle), no matter how fast the boat goes. That fixed angle is why every boat, duck, and swan wake shares the same signature shape.',
+      formula: {
+        expr: 'ω = √(g·k)',
+        terms: [
+          { sym: 'ω', desc: 'how fast the wave oscillates (frequency)' },
+          { sym: 'g', desc: 'gravity' },
+          { sym: 'k', desc: 'wavenumber — 2π ÷ wavelength, so big k means short waves' },
+        ],
+      },
     });
     return () => setGuide(null);
   }, [setGuide]);
@@ -60,11 +73,16 @@ export function Wake() {
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
   useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
+  useEffect(() => {
+    renderer.primary = hexToRgb(palette.primary);
+    renderer.crest = hexToRgb(palette.crest);
+  }, [renderer, palette]);
 
   const canvasRef = useWaterEngine(sim, renderer, {
     getDropSize: () => 2,
     substeps: 1,
     isPaused: () => paused,
+    valueStudy: () => valueStudy,
     overlay: (cx, w, h, cover) => {
       drawSun(cx, w, h, lightDeg, elevation);
       drawWindArrow(cx, w, h, windDeg, windSpeed);
@@ -147,8 +165,7 @@ export function Wake() {
           <div className="controls">
             <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.98} max={0.999} step={0.001} onChange={setDamp} />
             <Slider label="corner shape" value={corner} display={corner === 0 ? 'square' : corner >= 1 ? 'round' : corner.toFixed(2)} min={0} max={1} step={0.02} onChange={setCorner} />
-            <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
-            <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
+            <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
         </Details>

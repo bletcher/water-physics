@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { WaterSim } from '../sim/WaterSim';
 import type { Renderer } from '../sim/types';
+import { applyValueStudy } from '../sim/valueStudy';
 
 export interface EngineOptions {
   /** interaction: radius (grid cells) of a drop made by the pointer */
@@ -13,6 +14,8 @@ export interface EngineOptions {
   isPaused?: () => boolean;
   /** camera pitch in degrees: 0 = straight down, larger = more oblique */
   getViewAngle?: () => number;
+  /** when true, flatten the frame into a painter's value study (flat light/dark tones) */
+  valueStudy?: () => boolean;
   /**
    * Draw a gizmo over the finished frame. `cover` is where the sim rect landed on
    * the canvas after cover-cropping: a point (simX, simY) maps to canvas
@@ -133,6 +136,7 @@ export function useWaterEngine(
     const substeps = optsRef.current.substeps ?? 2;
     const paint = () => {
       renderer.render(sim, img);
+      if (optsRef.current.valueStudy?.()) applyValueStudy(img.data, sim.W * sim.H, 4);
       offCtx.putImageData(img, 0, 0);
       const cw = canvas.width, ch = canvas.height;
       const beta = viewBeta();

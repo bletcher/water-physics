@@ -1,4 +1,5 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { CSSProperties, PointerEvent as RPointerEvent } from 'react';
 import type { WaterSim } from '../sim/WaterSim';
 
 const ETA = 1.0 / 1.33;
@@ -24,6 +25,32 @@ interface Props {
  */
 export function CausticsCrossSection({ sim, depth, elevation, lightDeg }: Props) {
   const ref = useRef<HTMLCanvasElement | null>(null);
+  const figRef = useRef<HTMLElement | null>(null);
+  const grab = useRef<{ dx: number; dy: number } | null>(null);
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+
+  const onGripDown = (e: RPointerEvent<HTMLDivElement>) => {
+    const fig = figRef.current;
+    if (!fig) return;
+    const r = fig.getBoundingClientRect();
+    grab.current = { dx: e.clientX - r.left, dy: e.clientY - r.top };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  };
+  const onGripMove = (e: RPointerEvent<HTMLDivElement>) => {
+    const g = grab.current;
+    const fig = figRef.current;
+    if (!g || !fig) return;
+    const w = fig.offsetWidth, h = fig.offsetHeight;
+    const x = Math.max(4, Math.min(window.innerWidth - w - 4, e.clientX - g.dx));
+    const y = Math.max(4, Math.min(window.innerHeight - h - 4, e.clientY - g.dy));
+    setPos({ x, y });
+  };
+  const onGripUp = () => { grab.current = null; };
+
+  // once dragged, pin to the chosen spot (overrides the docked CSS position)
+  const style: CSSProperties | undefined = pos
+    ? { left: pos.x, top: pos.y, right: 'auto', bottom: 'auto', transform: 'none' }
+    : undefined;
   const depthRef = useRef(depth);
   depthRef.current = depth;
   const elRef = useRef(elevation);
@@ -129,14 +156,25 @@ export function CausticsCrossSection({ sim, depth, elevation, lightDeg }: Props)
   }, [sim]);
 
   return (
-    <figure className="xsection">
+    <figure className="xsection" ref={figRef} style={style}>
+      <div
+        className="xsection-drag"
+        onPointerDown={onGripDown}
+        onPointerMove={onGripMove}
+        onPointerUp={onGripUp}
+        onPointerCancel={onGripUp}
+        title="Drag to move the side view"
+      >
+        <span className="xsection-grip" aria-hidden="true" />
+        <span>side view · drag to move</span>
+      </div>
       <canvas
         ref={ref}
         className="xsection-canvas"
         aria-label="Side view: sunlight refracting through the wavy surface and focusing on the pool floor."
       />
       <figcaption>
-        side view — sunlight bends at each ripple and <b>focuses on the floor</b> where the surface curves like a lens
+        sunlight bends at each ripple and <b>focuses on the floor</b> where the surface curves like a lens
       </figcaption>
     </figure>
   );

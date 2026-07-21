@@ -8,9 +8,12 @@ import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
 import { WindControls } from '../components/WindControls';
+import { SunDial } from '../components/SunDial';
 import { Details } from '../components/Details';
-import { drawWindArrow } from '../overlays';
+import { drawSun, drawWindArrow } from '../overlays';
+import { hexToRgb } from '../color';
 import { useGuide } from '../shell/GuideContext';
+import { usePalette } from '../shell/PaletteContext';
 
 type Tool = 'drop' | 'wall' | 'erase';
 
@@ -30,6 +33,14 @@ export function PaintObstacle() {
       title: 'Brush a wall, steer the waves',
       seeing: 'Paint any shape and watch waves reflect off it and bend (diffract) around its sides.',
       painting: 'Water wraps around obstacles — keep the surface continuous behind them, just quieter.',
+      deeper: 'An obstacle is just cells held at zero height — a hard wall. Waves reflect off its face, and because waves bend around edges (diffraction) they curl into the sheltered water behind it instead of leaving a crisp shadow. How much they wrap depends on wavelength versus the obstacle’s size: long waves bend around easily, short ones cast a sharper shadow.',
+      formula: {
+        expr: 'h = 0 at the wall',
+        terms: [
+          { sym: 'h', desc: 'surface height' },
+          { sym: 'the wall', desc: 'obstacle cells pinned flat, so waves can’t pass — they reflect and bend around instead' },
+        ],
+      },
     });
     return () => setGuide(null);
   }, [setGuide]);
@@ -39,14 +50,21 @@ export function PaintObstacle() {
   const [dropR, setDropR] = useState(3.5);
   const [brush, setBrush] = useState(7);
   const [lightDeg, setLightDeg] = useState(230);
+  const [elevation, setElevation] = useState(40);
   const [tool, setTool] = useState<Tool>('wall');
   const [dripping, setDripping] = useState(false);
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
+  const { palette, valueStudy } = usePalette();
 
   useEffect(() => { sim.c = c; }, [sim, c]);
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);
+  useEffect(() => { renderer.elevation = elevation; }, [renderer, elevation]);
   useEffect(() => { renderer.whitecap = whitecapFromWind(windSpeed); }, [renderer, windSpeed]);
+  useEffect(() => {
+    renderer.primary = hexToRgb(palette.primary);
+    renderer.crest = hexToRgb(palette.crest);
+  }, [renderer, palette]);
 
   // no circular rock here: park it offscreen so pointer-drag never grabs it,
   // then seed a small starter wall + a drop so the canvas isn't empty.
@@ -64,7 +82,8 @@ export function PaintObstacle() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
-    overlay: (cx, w, h) => drawWindArrow(cx, w, h, windDeg, windSpeed),
+    valueStudy: () => valueStudy,
+    overlay: (cx, w, h) => { drawSun(cx, w, h, lightDeg, elevation); drawWindArrow(cx, w, h, windDeg, windSpeed); },
     onPointer: (s, p) => {
       if (tool === 'drop') return false; // fall through to default drop / wake
       s.paintMask(p.x, p.y, brush, tool === 'wall' ? 1 : 0);
@@ -122,7 +141,7 @@ export function PaintObstacle() {
             <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} />
             <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
-            <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
+            <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>

@@ -83,7 +83,7 @@ body {
   position: fixed; top: 0; right: 0; height: 100%; z-index: 7;
   width: min(360px, 84vw);
   padding: calc(clamp(24px, 4vw, 44px) + env(safe-area-inset-top)) calc(clamp(20px, 3vw, 34px) + env(safe-area-inset-right)) calc(clamp(24px, 4vw, 44px) + env(safe-area-inset-bottom));
-  display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  display: flex; flex-direction: column; justify-content: safe center; gap: 16px;
   overflow-y: auto;
   background: linear-gradient(270deg, rgba(9,12,16,0.86), rgba(9,12,16,0.34) 82%, transparent);
   backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
@@ -94,9 +94,14 @@ body {
 .guide .g-seeing { font-size: clamp(14.5px, 1.7vw, 16px); line-height: 1.6; color: #cdd6d6; max-width: 34ch; }
 .guide .g-paint { border-left: 2px solid var(--ochre); padding-left: 13px; font-style: italic; font-size: clamp(14px, 1.6vw, 15.5px); line-height: 1.55; color: var(--pearl); max-width: 32ch; }
 .guide .g-paint b { display: block; font-family: "IBM Plex Mono", monospace; font-style: normal; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ochre); margin-bottom: 6px; }
-.guide .g-steps { display: flex; align-items: center; gap: 12px; margin-top: 4px; }
-.guide .g-steps button { font: inherit; font-size: 13px; color: var(--pearl); background: rgba(170,205,205,0.08); border: 1px solid var(--edge); border-radius: 999px; padding: 6px 14px; cursor: pointer; }
-.guide .g-steps button:hover { border-color: var(--verdigris); }
+.guide .g-steps { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+.guide .g-arrow { font: inherit; font-size: 15px; line-height: 1; color: var(--pearl); background: rgba(170,205,205,0.08); border: 1px solid var(--edge); border-radius: 999px; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.guide .g-arrow:hover { border-color: var(--verdigris); }
+.guide .g-dots { display: flex; align-items: center; justify-content: center; gap: 8px; flex: 1; flex-wrap: wrap; }
+.guide .g-dot { width: 9px; height: 9px; padding: 0; border-radius: 999px; background: rgba(170,205,205,0.18); border: 1px solid var(--edge); cursor: pointer; transition: background 0.15s ease, transform 0.15s ease; }
+.guide .g-dot:hover { background: rgba(127,183,163,0.5); border-color: var(--verdigris); }
+.guide .g-dot.on { background: var(--verdigris); border-color: var(--verdigris); transform: scale(1.3); }
+.guide .g-arrow:focus-visible, .guide .g-dot:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 2px; }
 .guide .g-steps span { font-family: "IBM Plex Mono", monospace; font-size: 12px; color: var(--dim); }
 .guide .g-close { align-self: flex-start; margin-top: 4px; background: none; border: none; color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
 .guide .g-close:hover { color: var(--pearl); }
@@ -109,7 +114,6 @@ body {
   border: 1px solid var(--edge); border-radius: 999px; padding: 7px 8px 7px 16px;
   box-shadow: 0 18px 50px -26px rgba(0,0,0,0.85); max-width: 94vw;
 }
-.bar .caption { font-family: "Fraunces", serif; font-style: italic; font-size: 14.5px; color: #d7dfde; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 30vw; }
 .bar .b-sep { width: 1px; height: 22px; background: var(--edge); flex: none; }
 .bar .b-rooms { display: inline-flex; align-items: center; gap: 9px; padding: 7px 15px 7px 12px; font: inherit; font-size: 13.5px; color: var(--pearl); background: rgba(170,205,205,0.08); border: 1px solid var(--edge); border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .bar .b-rooms .b-grid { width: 13px; height: 13px; flex: none; border-radius: 2px;
@@ -149,11 +153,43 @@ body {
 .rooms .r-room:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; border-radius: 2px; }
 .rooms .g-close { align-self: flex-start; margin-top: 8px; background: none; border: none; color: var(--dim); font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; }
 .rooms .g-close:hover { color: var(--pearl); }
-.app:not(.awake) .rooms { opacity: 0.36; }
+/* the Rooms panel stays fully legible while it's open — it never dims on idle */
+
+/* Rooms → Settings: global colour + value-study controls, applied to every tool */
+.rooms .r-settings { border-top: 1px solid var(--edge); padding-top: 14px; }
+.rooms .r-settings .r-label { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.rooms .r-settings .controls { grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
+.rooms .r-reset { background: none; border: none; padding: 0; font-family: "IBM Plex Mono", monospace; font-size: 10px; letter-spacing: 0.06em; text-transform: none; color: var(--dim); cursor: pointer; }
+.rooms .r-reset:hover { color: var(--verdigris); }
+.rooms .r-note { margin: 10px 0 0; font-size: 11px; line-height: 1.4; color: var(--dim); max-width: 30ch; }
 
 /* guide → explorations link */
 .guide .g-explore { align-self: flex-start; margin-top: 6px; background: none; border: none; color: var(--verdigris); font-family: "IBM Plex Mono", monospace; font-size: 11.5px; letter-spacing: 0.08em; cursor: pointer; padding: 0; }
 .guide .g-explore:hover { color: var(--pearl); }
+
+/* guide → "Dig deeper" disclosure (the physics, on demand) */
+.guide .g-deeper { margin-top: 10px; border-top: 1px solid var(--edge); padding-top: 12px; max-width: 34ch; }
+.guide .g-deeper > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 7px; font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.guide .g-deeper > summary::-webkit-details-marker { display: none; }
+.guide .g-deeper > summary::before { content: "▸"; font-size: 9px; color: var(--verdigris); transition: transform 0.15s ease; }
+.guide .g-deeper[open] > summary::before { transform: rotate(90deg); }
+.guide .g-deeper > summary:hover { color: var(--pearl); }
+.guide .g-deeper > summary:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; border-radius: 3px; }
+.guide .g-deeper > p { margin-top: 12px; font-size: 13.5px; line-height: 1.6; color: #c2cccb; }
+
+/* nested "The equation" disclosure inside Dig deeper */
+.guide .g-eqn { margin-top: 12px; }
+.guide .g-eqn > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 7px; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.guide .g-eqn > summary::-webkit-details-marker { display: none; }
+.guide .g-eqn > summary::before { content: "▸"; font-size: 9px; color: var(--verdigris); transition: transform 0.15s ease; }
+.guide .g-eqn[open] > summary::before { transform: rotate(90deg); }
+.guide .g-eqn > summary:hover { color: var(--pearl); }
+.guide .g-eqn > summary:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; border-radius: 3px; }
+.guide .g-formula { display: inline-block; margin-top: 10px; padding: 6px 12px; font-family: "IBM Plex Mono", monospace; font-size: 14px; color: var(--verdigris); background: rgba(127,183,163,0.1); border: 1px solid rgba(127,183,163,0.28); border-radius: 6px; }
+.guide .g-terms { margin-top: 12px; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+.guide .g-terms div { display: contents; }
+.guide .g-terms dt { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--pearl); }
+.guide .g-terms dd { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--dim); }
 
 /* ---- Adjust sheet = the instrument's control panel ---- */
 .panel {
@@ -168,7 +204,6 @@ body {
   transition: transform 0.42s cubic-bezier(0.22,1,0.36,1), opacity 0.42s ease;
 }
 .app.adjust-open .panel { transform: translate(-50%, 0); opacity: 1; pointer-events: auto; }
-.panel .sheet-empty { color: var(--dim); font-size: 13.5px; line-height: 1.5; margin: 0; }
 
 /* caustics cross-section floats above the bar (behind the Adjust sheet) */
 .xsection {
@@ -177,6 +212,22 @@ body {
   background: var(--glass); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--edge); border-radius: 12px; padding: 8px 10px;
 }
+/* when the Adjust sheet is open it would cover the bottom-docked cross-section,
+   so lift the cross-section to the top of the screen where both stay visible
+   (skipped once the viewer has dragged it somewhere by hand) */
+.app.adjust-open .xsection:not([style*="top"]) { bottom: auto; top: calc(clamp(74px, 11vh, 120px) + env(safe-area-inset-top)); z-index: 8; }
+.xsection-drag {
+  display: flex; align-items: center; gap: 7px;
+  margin: -2px -2px 6px; padding: 4px 6px;
+  font-family: "IBM Plex Mono", monospace; font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--dim); cursor: grab; touch-action: none; border-radius: 8px;
+}
+.xsection-drag:active { cursor: grabbing; }
+.xsection-drag:hover { color: var(--pearl); background: rgba(170,205,205,0.06); }
+.xsection-grip { width: 16px; height: 8px; flex: none;
+  background:
+    radial-gradient(circle, currentColor 1px, transparent 1.4px) 0 0 / 5px 4px;
+  opacity: 0.6; }
 
 .eq {
   font-family: "IBM Plex Mono", monospace;
@@ -273,6 +324,33 @@ input[type="range"]:focus-visible {
 .ctl input[type="color"]:focus-visible {
   outline: 2px solid var(--verdigris);
   outline-offset: 2px;
+}
+
+/* ---- sun dial: one draggable sun instead of two sliders ---- */
+.sundial-pad {
+  position: relative;
+  width: 112px; height: 112px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(127,183,163,0.12), rgba(127,183,163,0) 70%),
+    rgba(10,16,20,0.55);
+  border: 1px solid var(--edge);
+  cursor: crosshair;
+  touch-action: none;
+}
+.sundial-pad:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; }
+.sundial-noon {
+  position: absolute; left: 50%; top: 50%; width: 5px; height: 5px;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: none; border: 1px solid rgba(170,205,205,0.4);
+}
+.sundial-sun {
+  position: absolute; width: 15px; height: 15px;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(circle at 50% 45%, #fff, #ffd98a 55%, rgba(255,190,90,0) 78%);
+  box-shadow: 0 0 8px 2px rgba(255,214,140,0.55);
+  pointer-events: none;
 }
 
 /* ---- progressive disclosure ---- */

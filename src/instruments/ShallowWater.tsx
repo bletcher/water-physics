@@ -9,9 +9,11 @@ import { Slider } from '../components/Slider';
 import { ToggleButton } from '../components/ToggleButton';
 import { SimToggles } from '../components/SimToggles';
 import { WindControls } from '../components/WindControls';
+import { SunDial } from '../components/SunDial';
 import { Details } from '../components/Details';
 import { drawSun, drawWindArrow } from '../overlays';
 import { useGuide } from '../shell/GuideContext';
+import { usePalette } from '../shell/PaletteContext';
 
 const SWELL_PERIOD = 90;    // frames between incoming swells
 const OBJECT_R = 9;         // radius (grid cells) of a dropped object
@@ -40,12 +42,22 @@ export function ShallowWater() {
   const [tool, setTool] = useState<'water' | 'object'>('water');
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
   const { setGuide } = useGuide();
+  const { valueStudy } = usePalette();
   useEffect(() => {
     setGuide({
       eyebrow: 'Shallow Water',
       title: 'Waves onto the shore',
       seeing: 'Swells roll in from the left, slow over the shallows, and break on the beach; curve the shore to make them refract.',
       painting: 'Near shore, waves line up parallel to the beach and whiten as they break; colour warms to sand.',
+      deeper: 'In shallow water a wave’s speed drops with depth — roughly c ∝ √depth. So as a swell reaches the shallows it slows; the part still in deeper water runs ahead, swinging the whole wavefront around to line up with the shore. That turning is refraction. Slowing also shortens and steepens the wave until it piles up and breaks — shoaling.',
+      formula: {
+        expr: 'c = √(g·d)',
+        terms: [
+          { sym: 'c', desc: 'wave speed' },
+          { sym: 'g', desc: 'gravity' },
+          { sym: 'd', desc: 'water depth — so shallower water means slower waves' },
+        ],
+      },
     });
     return () => setGuide(null);
   }, [setGuide]);
@@ -78,6 +90,7 @@ export function ShallowWater() {
     getDropSize: () => dropR,
     isPaused: () => paused,
     getViewAngle: () => viewDeg,
+    valueStudy: () => valueStudy,
     overlay: (cx, w, h) => { drawSun(cx, w, h, lightDeg, elevation); drawWindArrow(cx, w, h, windDeg, windSpeed); },
     onPointer: (s, p) => {
       if (tool !== 'object') return false; // fall through to the default water drop
@@ -133,8 +146,7 @@ export function ShallowWater() {
           <div className="controls">
             <Slider label="shore steepness" value={shoreCurve} display={shoreCurve.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setShoreCurve} />
             <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
-            <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
-            <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
+            <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />

@@ -7,10 +7,14 @@ import { buildShoreFields } from '../sim/shore';
 import { WindField, whitecapFromWind } from '../sim/wind';
 import { useWaterEngine } from '../hooks/useWaterEngine';
 import { Slider } from '../components/Slider';
+import { ToggleButton } from '../components/ToggleButton';
 import { WindControls } from '../components/WindControls';
+import { SunDial } from '../components/SunDial';
 import { CausticsCrossSection } from '../components/CausticsCrossSection';
 import { drawSun, drawWindArrow } from '../overlays';
+import { hexToRgb } from '../color';
 import { useGuide } from '../shell/GuideContext';
+import { usePalette, floorFromWater } from '../shell/PaletteContext';
 import { LESSONS } from '../lessons/steps';
 import type { LessonContext } from '../lessons/steps';
 
@@ -36,6 +40,7 @@ export function Learn() {
   const step = LESSONS[i];
   const renderer = step.renderer === 'ripple' ? ripple : step.renderer === 'caustics' ? caustics : shallow;
   const { setGuide } = useGuide();
+  const { palette, valueStudy } = usePalette();
 
   const [damping, setDamping] = useState(0.994);
   const [lightDeg, setLightDeg] = useState(230);
@@ -44,6 +49,7 @@ export function Learn() {
   const [viewDeg, setViewDeg] = useState(0);
   const [windSpeed, setWindSpeed] = useState(0);
   const [windDeg, setWindDeg] = useState(40);
+  const [isolate, setIsolate] = useState(false);
 
   // On step change: reset the exposed controls to defaults, then build the scene.
   useEffect(() => {
@@ -54,6 +60,7 @@ export function Learn() {
     setViewDeg(0);
     setWindSpeed(step.controls.includes('wind') ? 0.5 : 0);
     setWindDeg(40);
+    setIsolate(false);
     step.configure(ctx);
   }, [i, step, ctx]);
 
@@ -64,9 +71,14 @@ export function Learn() {
       title: step.title,
       seeing: `${step.body} ${step.tryThis}`,
       painting: step.painting,
+      deeper: step.deeper,
+      formula: step.formula,
       onPrev: () => setI((v) => Math.max(0, v - 1)),
       onNext: () => setI((v) => Math.min(LESSONS.length - 1, v + 1)),
+      onStep: (n) => setI(n),
       progress: { i, n: LESSONS.length },
+      stepLabels: LESSONS.map((s) => s.title),
+      adjustable: step.controls.length > 0,
     });
     return () => setGuide(null);
   }, [i, step, setGuide]);
@@ -88,6 +100,13 @@ export function Learn() {
     caustics.whitecap = wc;
     shallow.whitecap = wc;
   }, [ripple, caustics, shallow, windSpeed]);
+  useEffect(() => { caustics.isolate = isolate; }, [caustics, isolate]);
+  useEffect(() => {
+    const p = hexToRgb(palette.primary);
+    ripple.primary = p;
+    ripple.crest = hexToRgb(palette.crest);
+    caustics.floor = floorFromWater(p);
+  }, [ripple, caustics, palette]);
   useEffect(() => {
     if (step.renderer !== 'shallow') return;
     buildShoreFields(sim.W, sim.H, depth, c2, { cMax: 0.5, shoreCurve: 1.4, curve });
@@ -100,7 +119,12 @@ export function Learn() {
   const canvasRef = useWaterEngine(sim, renderer, {
     getDropSize: () => 3.2,
     getViewAngle: () => viewDeg,
-    onFrame: (s, frame) => { wind.update(s, windSpeed, windDeg); step.source?.(s, frame); },
+    valueStudy: () => valueStudy,
+    // gate wind by the current step so leaving the wind step never leaves ripples behind
+    onFrame: (s, frame) => {
+      wind.update(s, step.controls.includes('wind') ? windSpeed : 0, windDeg);
+      step.source?.(s, frame);
+    },
     overlay: (c, w, h) => { if (showSun) drawSun(c, w, h, lightDeg, elevation); drawWindArrow(c, w, h, windDeg, windSpeed); },
   });
 
@@ -116,29 +140,31 @@ export function Learn() {
       </div>
 
       <div className="panel">
-        {hasControls ? (
-          <div className="controls">
-            {step.controls.includes('damping') && (
-              <Slider label="calm" value={damping} display={damping.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamping} />
+        {hasControls && (
+          <>
+            <div className="controls">
+              {step.controls.includes('damping') && (
+                <Slider label="calm" value={damping} display={damping.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamping} />
+              )}
+              {step.controls.includes('light') && (
+                <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
+              )}
+              {step.controls.includes('curve') && (
+                <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />
+              )}
+              {step.controls.includes('view') && (
+                <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+              )}
+              {step.controls.includes('wind') && (
+                <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
+              )}
+            </div>
+            {step.controls.includes('isolate') && (
+              <div className="row">
+                <ToggleButton label="light only" pressed={isolate} onToggle={() => setIsolate((v) => !v)} />
+              </div>
             )}
-            {step.controls.includes('light') && (
-              <Slider label="light angle" value={lightDeg} display={`${lightDeg}°`} min={0} max={360} step={5} onChange={setLightDeg} />
-            )}
-            {step.controls.includes('height') && (
-              <Slider label="light height" value={elevation} display={`${elevation}°`} min={8} max={90} step={1} onChange={setElevation} />
-            )}
-            {step.controls.includes('curve') && (
-              <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />
-            )}
-            {step.controls.includes('view') && (
-              <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
-            )}
-            {step.controls.includes('wind') && (
-              <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
-            )}
-          </div>
-        ) : (
-          <p className="sheet-empty">Nothing to adjust in this step — just watch the water, and tap it to add your own.</p>
+          </>
         )}
       </div>
     </>

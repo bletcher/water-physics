@@ -21,6 +21,8 @@ export class CausticsRenderer implements Renderer {
   elevation = 62;  // sun height above the horizon (drives refraction + specular)
   lightDeg = 230;  // sun azimuth (also drives the specular glint)
   whitecap = 0;    // wind whitecap intensity (0 = none)
+  isolate = false;     // show ONLY the caustic light on a near-black floor
+  floor: [number, number, number] = [88, 138, 156]; // pool-floor base colour (from palette)
 
   private caustic: Float32Array | null = null;
   private cTmp: Float32Array | null = null;
@@ -118,27 +120,41 @@ export class CausticsRenderer implements Renderer {
         // where we SEE the floor: the view ray refracts opposite the light
         const sx = x - BEND * gx * D, sy = y - BEND * gy * D;
 
-        // procedural pool tiles at the sampled (refracted) floor point
-        const T = 16;
-        const tileX = ((sx % T) + T) % T, tileY = ((sy % T) + T) % T;
-        const grout = (tileX < 1.4 || tileY < 1.4) ? 0.62 : 1.0;
-        let fr = 92 * grout, fg = 150 * grout, fb = 172 * grout;
+        // caustic light, sharpened: focused filaments bloom while the floor between
+        // them stays dim. That high contrast is what reads as dancing light.
+        const cs = this.sample(sim, sx, sy);
+        const glow = str * (0.55 * cs + 0.95 * cs * cs);
 
-        const light = 0.32 + str * this.sample(sim, sx, sy);
-        fr *= light; fg *= light; fb *= light;
-        fr *= aR; fg *= aG; fb *= aB;
+        let fr: number, fg: number, fb: number;
+        if (this.isolate) {
+          // isolate the light: a near-black floor with only the bright warm net,
+          // so you can see exactly the pattern the surface casts, on its own.
+          fr = 8 + glow * 210; fg = 10 + glow * 200; fb = 14 + glow * 150;
+        } else {
+          // soft plaster floor — a gentle large-scale mottle rather than a hard
+          // tile grid, so nothing mechanical competes with the light.
+          const mott = 0.92 + 0.08 * Math.sin(sx * 0.13 + 1.7) * Math.sin(sy * 0.11 - 0.6);
+          fr = this.floor[0] * mott; fg = this.floor[1] * mott; fb = this.floor[2] * mott;
+          const light = 0.22 + glow;
+          fr *= light; fg *= light; fb *= light;
+          fr *= aR; fg *= aG; fb *= aB;
 
-        // surface specular glint (slope scaled ×3.2 to match the Ripple Study look)
-        const sxg = gx * 3.2, syg = gy * 3.2;
-        const inv = 1 / Math.sqrt(sxg * sxg + syg * syg + 1);
-        const nx = -sxg * inv, ny = -syg * inv, nz = inv;
-        const diff = Math.max(0, nx * lx + ny * ly + nz * lz);
-        const spec = Math.pow(diff, 80) * 210;
-        fr += spec; fg += spec; fb += spec;
+          // warm, near-white cores on the brightest filaments — sunlight, not tint
+          const hot = glow - 0.7;
+          if (hot > 0) { fr += hot * 150; fg += hot * 135; fb += hot * 88; }
 
-        if (this.whitecap > 0) {
-          const foam = this.whitecap * (hCurr[i] - 0.4);
-          if (foam > 0) { const f = foam * 150; fr += f; fg += f; fb += f; }
+          // surface specular glint (slope scaled ×3.2 to match the Ripple Study look)
+          const sxg = gx * 3.2, syg = gy * 3.2;
+          const inv = 1 / Math.sqrt(sxg * sxg + syg * syg + 1);
+          const nx = -sxg * inv, ny = -syg * inv, nz = inv;
+          const diff = Math.max(0, nx * lx + ny * ly + nz * lz);
+          const spec = Math.pow(diff, 80) * 210;
+          fr += spec; fg += spec; fb += spec;
+
+          if (this.whitecap > 0) {
+            const foam = this.whitecap * (hCurr[i] - 0.4);
+            if (foam > 0) { const f = foam * 150; fr += f; fg += f; fb += f; }
+          }
         }
 
         px[o]     = fr < 0 ? 0 : fr > 255 ? 255 : fr;
