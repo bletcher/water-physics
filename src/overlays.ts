@@ -125,19 +125,19 @@ export function drawWindArrow(
 const KELVIN_HALF = Math.asin(1 / 3); // ≈ 19.47°, the deep-water wake half-angle
 
 /**
- * Draw the boat and (optionally) the Kelvin wedge guides. Position is normalized
- * (0–1) in sim space; `angle` is the heading in radians.
+ * Draw the boat and (optionally) the Kelvin wedge guides. `x`, `y` are canvas
+ * pixels (map sim coords through the engine's cover transform); `angle` is the
+ * heading in radians.
  */
 export function drawBoat(
   ctx: CanvasRenderingContext2D,
   cw: number,
   ch: number,
-  nx: number,
-  ny: number,
+  x: number,
+  y: number,
   angle: number,
   showWedge: boolean,
 ): void {
-  const x = nx * cw, y = ny * ch;
   const scale = Math.min(cw, ch);
 
   ctx.save();

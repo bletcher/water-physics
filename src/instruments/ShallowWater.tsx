@@ -11,6 +11,7 @@ import { SimToggles } from '../components/SimToggles';
 import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
 import { drawSun, drawWindArrow } from '../overlays';
+import { useGuide } from '../shell/GuideContext';
 
 const SWELL_PERIOD = 90;    // frames between incoming swells
 const OBJECT_R = 9;         // radius (grid cells) of a dropped object
@@ -22,7 +23,7 @@ const OBJECT_R = 9;         // radius (grid cells) of a dropped object
  * bend to wrap around the coast.
  */
 export function ShallowWater() {
-  const sim = useMemo(() => new WaterSim(), []);
+  const sim = useMemo(() => new WaterSim(320, 180), []);
   const renderer = useMemo(() => new ShallowWaterRenderer(), []);
   const depthField = useMemo(() => new Float32Array(sim.N), [sim]);
   const c2Field = useMemo(() => new Float32Array(sim.N), [sim]);
@@ -38,6 +39,16 @@ export function ShallowWater() {
   const [swell, setSwell] = useState(true);
   const [tool, setTool] = useState<'water' | 'object'>('water');
   const { infinite, setInfinite, paused, setPaused, viewDeg, setViewDeg, windSpeed, setWindSpeed, windDeg, setWindDeg } = useSimControls(sim);
+  const { setGuide } = useGuide();
+  useEffect(() => {
+    setGuide({
+      eyebrow: 'Shallow Water',
+      title: 'Waves onto the shore',
+      seeing: 'Swells roll in from the left, slow over the shallows, and break on the beach; curve the shore to make them refract.',
+      painting: 'Near shore, waves line up parallel to the beach and whiten as they break; colour warms to sand.',
+    });
+    return () => setGuide(null);
+  }, [setGuide]);
 
   useEffect(() => { sim.damp = damp; }, [sim, damp]);
   useEffect(() => { renderer.lightDeg = lightDeg; }, [renderer, lightDeg]);

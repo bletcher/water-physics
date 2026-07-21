@@ -10,6 +10,7 @@ import { SimToggles } from '../components/SimToggles';
 import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
 import { drawWindArrow } from '../overlays';
+import { useGuide } from '../shell/GuideContext';
 
 type Tool = 'drop' | 'wall' | 'erase';
 
@@ -19,9 +20,19 @@ type Tool = 'drop' | 'wall' | 'erase';
  * the obstacle is just cells clamped to zero, so any shape works.
  */
 export function PaintObstacle() {
-  const sim = useMemo(() => new WaterSim(), []);
+  const sim = useMemo(() => new WaterSim(320, 180), []);
   const renderer = useMemo(() => new RippleRenderer(), []);
   const wind = useMemo(() => new WindField(), []);
+  const { setGuide } = useGuide();
+  useEffect(() => {
+    setGuide({
+      eyebrow: 'Paint Obstacle',
+      title: 'Brush a wall, steer the waves',
+      seeing: 'Paint any shape and watch waves reflect off it and bend (diffract) around its sides.',
+      painting: 'Water wraps around obstacles — keep the surface continuous behind them, just quieter.',
+    });
+    return () => setGuide(null);
+  }, [setGuide]);
 
   const [c, setC] = useState(0.42);
   const [damp, setDamp] = useState(0.996);

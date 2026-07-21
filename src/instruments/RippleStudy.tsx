@@ -12,15 +12,26 @@ import { ColorPicker } from '../components/ColorPicker';
 import { Details } from '../components/Details';
 import { drawSun, drawWindArrow } from '../overlays';
 import { hexToRgb } from '../color';
+import { useGuide } from '../shell/GuideContext';
 
 /**
  * Ripple Study — shade the surface directly from its normal. Reflection off the
  * rock, diffraction around its sides, interference behind it.
  */
 export function RippleStudy() {
-  const sim = useMemo(() => new WaterSim(), []);
+  const sim = useMemo(() => new WaterSim(320, 180), []);
   const renderer = useMemo(() => new RippleRenderer(), []);
   const wind = useMemo(() => new WindField(), []);
+  const { setGuide } = useGuide();
+  useEffect(() => {
+    setGuide({
+      eyebrow: 'Ripple Study',
+      title: 'Rings, reflection, interference',
+      seeing: 'Tap to drop rings; drag the rock. Rings reflect off it and cross into a shifting mesh.',
+      painting: 'That crossing sparkle is what reads as water — two ripple sets meet near the rock.',
+    });
+    return () => setGuide(null);
+  }, [setGuide]);
 
   const [c, setC] = useState(0.42);
   const [damp, setDamp] = useState(0.994);

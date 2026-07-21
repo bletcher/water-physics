@@ -9,6 +9,7 @@ import { ToggleButton } from '../components/ToggleButton';
 import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
 import { drawSun, drawBoat, drawWindArrow } from '../overlays';
+import { useGuide } from '../shell/GuideContext';
 
 /**
  * Wake — a moving source on the dispersive (iWave) surface. Deep-water dispersion
@@ -17,10 +18,20 @@ import { drawSun, drawBoat, drawWindArrow } from '../overlays';
  * its own; drag to steer it and curve the wake.
  */
 export function Wake() {
-  const sim = useMemo(() => new WaterSim(), []);
+  const sim = useMemo(() => new WaterSim(240, 135), []);
   const renderer = useMemo(() => new RippleRenderer(), []);
   const kernel = useMemo(() => makeIWaveKernel(5, 2.0), []);
   const wind = useMemo(() => new WindField(), []);
+  const { setGuide } = useGuide();
+  useEffect(() => {
+    setGuide({
+      eyebrow: 'Wake',
+      title: 'A boat and its wake',
+      seeing: 'The boat wanders on its own — drag to steer it. Its trailing waves fill the ~19.5° Kelvin wedge.',
+      painting: 'A boat, duck, or swan wake always opens at that same angle, whatever the speed.',
+    });
+    return () => setGuide(null);
+  }, [setGuide]);
   const boat = useRef({ x: 40, y: 80, vx: 1.3, vy: 0, heading: 0 });
   const steer = useRef({ x: 0, y: 0, t: -1 });
 
@@ -54,11 +65,11 @@ export function Wake() {
     getDropSize: () => 2,
     substeps: 1,
     isPaused: () => paused,
-    overlay: (cx, w, h) => {
+    overlay: (cx, w, h, cover) => {
       drawSun(cx, w, h, lightDeg, elevation);
       drawWindArrow(cx, w, h, windDeg, windSpeed);
       const b = boat.current;
-      drawBoat(cx, w, h, b.x / sim.W, b.y / sim.H, Math.atan2(b.vy, b.vx), wedge);
+      drawBoat(cx, w, h, cover.x + b.x * cover.scale, cover.y + b.y * cover.scale, Math.atan2(b.vy, b.vx), wedge);
     },
     onPointer: (_s, p) => {
       steer.current.x = p.x;

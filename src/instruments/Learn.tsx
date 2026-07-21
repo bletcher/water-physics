@@ -10,21 +10,17 @@ import { Slider } from '../components/Slider';
 import { WindControls } from '../components/WindControls';
 import { CausticsCrossSection } from '../components/CausticsCrossSection';
 import { drawSun, drawWindArrow } from '../overlays';
+import { useGuide } from '../shell/GuideContext';
 import { LESSONS } from '../lessons/steps';
 import type { LessonContext } from '../lessons/steps';
 
-interface LearnProps {
-  /** called from the final step's button to hand off to free play */
-  onDone: () => void;
-}
-
 /**
- * Learn — a guided path that reveals one idea about water at a time: a concept, a
- * thing to try on the live surface, and a painting takeaway. Reuses the same sim
- * and renderers as the free-play instruments; each step reconfigures the scene.
+ * Learn — a guided path that reveals one idea about water at a time. The concept,
+ * the thing to try, and the painting takeaway live in the Guide panel; the Adjust
+ * sheet holds only the one or two controls the current step surfaces.
  */
-export function Learn({ onDone }: LearnProps) {
-  const sim = useMemo(() => new WaterSim(), []);
+export function Learn() {
+  const sim = useMemo(() => new WaterSim(320, 180), []);
   const ripple = useMemo(() => new RippleRenderer(), []);
   const caustics = useMemo(() => new CausticsRenderer(), []);
   const shallow = useMemo(() => new ShallowWaterRenderer(), []);
@@ -39,8 +35,8 @@ export function Learn({ onDone }: LearnProps) {
   const [i, setI] = useState(0);
   const step = LESSONS[i];
   const renderer = step.renderer === 'ripple' ? ripple : step.renderer === 'caustics' ? caustics : shallow;
+  const { setGuide } = useGuide();
 
-  // exposed-control state (only the ones the current step surfaces are shown)
   const [damping, setDamping] = useState(0.994);
   const [lightDeg, setLightDeg] = useState(230);
   const [elevation, setElevation] = useState(40);
@@ -61,7 +57,20 @@ export function Learn({ onDone }: LearnProps) {
     step.configure(ctx);
   }, [i, step, ctx]);
 
-  // Keep the exposed controls wired to the sim / renderers.
+  // publish the lesson to the Guide panel, with in-guide step navigation
+  useEffect(() => {
+    setGuide({
+      eyebrow: `Step ${i + 1} of ${LESSONS.length}`,
+      title: step.title,
+      seeing: `${step.body} ${step.tryThis}`,
+      painting: step.painting,
+      onPrev: () => setI((v) => Math.max(0, v - 1)),
+      onNext: () => setI((v) => Math.min(LESSONS.length - 1, v + 1)),
+      progress: { i, n: LESSONS.length },
+    });
+    return () => setGuide(null);
+  }, [i, step, setGuide]);
+
   useEffect(() => { sim.damp = damping; }, [sim, damping]);
   useEffect(() => {
     ripple.lightDeg = lightDeg;
@@ -86,7 +95,6 @@ export function Learn({ onDone }: LearnProps) {
     shallow.depthField = depth;
   }, [i, curve, step.renderer, sim, depth, c2, shallow]);
 
-  // show the sun where the light matters: the light lesson and the lit 3-D scenes
   const showSun = step.controls.includes('light') || step.renderer !== 'ripple';
 
   const canvasRef = useWaterEngine(sim, renderer, {
@@ -96,41 +104,20 @@ export function Learn({ onDone }: LearnProps) {
     overlay: (c, w, h) => { if (showSun) drawSun(c, w, h, lightDeg, elevation); drawWindArrow(c, w, h, windDeg, windSpeed); },
   });
 
-  const last = i === LESSONS.length - 1;
+  const hasControls = step.controls.length > 0;
 
   return (
     <>
       <div className="stage">
         <canvas ref={canvasRef} className="water-canvas" aria-label={step.title} />
-        <div className="hint">tap the water to make waves</div>
         {step.crossSection && (
           <CausticsCrossSection sim={sim} depth={caustics.depth} elevation={elevation} lightDeg={lightDeg} />
         )}
       </div>
 
-      <div className="panel lesson">
-        <div className="lesson-top">
-          <span className="lesson-count">{i + 1} / {LESSONS.length}</span>
-          <div className="lesson-dots" role="tablist" aria-label="lesson steps">
-            {LESSONS.map((s, k) => (
-              <button
-                key={s.id}
-                className={'dot' + (k === i ? ' on' : '')}
-                role="tab"
-                aria-selected={k === i}
-                aria-label={`Step ${k + 1}: ${s.title}`}
-                onClick={() => setI(k)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <h2 className="lesson-title">{step.title}</h2>
-        <p className="lesson-body">{step.body}</p>
-        <p className="lesson-try"><span>Try</span>{step.tryThis}</p>
-
-        {step.controls.length > 0 && (
-          <div className="controls lesson-controls">
+      <div className="panel">
+        {hasControls ? (
+          <div className="controls">
             {step.controls.includes('damping') && (
               <Slider label="calm" value={damping} display={damping.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamping} />
             )}
@@ -150,16 +137,9 @@ export function Learn({ onDone }: LearnProps) {
               <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
             )}
           </div>
+        ) : (
+          <p className="sheet-empty">Nothing to adjust in this step — just watch the water, and tap it to add your own.</p>
         )}
-
-        <div className="lesson-paint"><span>For painting</span>{step.painting}</div>
-
-        <div className="lesson-nav">
-          <button disabled={i === 0} onClick={() => setI((v) => Math.max(0, v - 1))}>← Back</button>
-          {last
-            ? <button className="lesson-next" onClick={onDone}>Start exploring →</button>
-            : <button className="lesson-next" onClick={() => setI((v) => Math.min(LESSONS.length - 1, v + 1))}>Next →</button>}
-        </div>
       </div>
     </>
   );

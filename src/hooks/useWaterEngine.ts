@@ -13,8 +13,12 @@ export interface EngineOptions {
   isPaused?: () => boolean;
   /** camera pitch in degrees: 0 = straight down, larger = more oblique */
   getViewAngle?: () => number;
-  /** draw a gizmo over the finished frame (e.g. the sun marker) */
-  overlay?: (ctx: CanvasRenderingContext2D, cw: number, ch: number) => void;
+  /**
+   * Draw a gizmo over the finished frame. `cover` is where the sim rect landed on
+   * the canvas after cover-cropping: a point (simX, simY) maps to canvas
+   * (cover.x + simX*cover.scale, cover.y + simY*cover.scale).
+   */
+  overlay?: (ctx: CanvasRenderingContext2D, cw: number, ch: number, cover: { x: number; y: number; scale: number }) => void;
   /**
    * Custom pointer handling (e.g. painting obstacles). Return true if the event
    * was fully handled, to skip the default drop / rock-drag behaviour.
@@ -51,9 +55,12 @@ export function useWaterEngine(
     const img = offCtx.createImageData(sim.W, sim.H);
 
     const fit = () => {
-      const cssW = canvas.clientWidth || 360;
-      canvas.width = Math.round(cssW * (window.devicePixelRatio > 1 ? 1.5 : 1));
-      canvas.height = Math.round(canvas.width * sim.H / sim.W);
+      // fill the element's box (full-screen via CSS); the sim is stretched to cover it
+      const dpr = window.devicePixelRatio > 1 ? 1.5 : 1;
+      const cssW = canvas.clientWidth || window.innerWidth;
+      const cssH = canvas.clientHeight || window.innerHeight;
+      canvas.width = Math.max(1, Math.round(cssW * dpr));
+      canvas.height = Math.max(1, Math.round(cssH * dpr));
       ctx.imageSmoothingEnabled = true;
     };
     fit();
@@ -71,14 +78,24 @@ export function useWaterEngine(
       return (1 - k) / k;
     };
 
+    // where the sim rect lands on the canvas, scaled to *cover* it (crop overflow)
+    // so the surface fills the screen at a fixed aspect, without distortion.
+    const coverRect = (cw: number, ch: number) => {
+      const scale = Math.max(cw / sim.W, ch / sim.H);
+      return { x: (cw - sim.W * scale) / 2, y: (ch - sim.H * scale) / 2, scale };
+    };
+
     // ---- pointer interaction ----
     let draggingRock = false, painting = false, drawing = false, lastDropT = 0;
     const toSim = (e: PointerEvent) => {
       const r = canvas.getBoundingClientRect();
+      const beta = viewBeta();
+      if (beta === 0) {
+        const c = coverRect(r.width, r.height);           // CSS-pixel cover rect
+        return { x: (e.clientX - r.left - c.x) / c.scale, y: (e.clientY - r.top - c.y) / c.scale };
+      }
       const Xd = (e.clientX - r.left) / r.width;
       const Yd = (e.clientY - r.top) / r.height;
-      const beta = viewBeta();
-      if (beta === 0) return { x: Xd * sim.W, y: Yd * sim.H };
       const s = (1 + beta * Yd) / (1 + beta);          // un-project the perspective row
       const vs = Yd * (1 + beta) / (1 + beta * Yd);
       const uN = 0.5 + (Xd - 0.5) / s;
@@ -119,8 +136,11 @@ export function useWaterEngine(
       offCtx.putImageData(img, 0, 0);
       const cw = canvas.width, ch = canvas.height;
       const beta = viewBeta();
+      let cover = { x: 0, y: 0, scale: cw / sim.W };
       if (beta === 0) {
-        ctx.drawImage(off, 0, 0, cw, ch);
+        // fixed-aspect cover: uniform scale to fill the canvas, cropping the overflow
+        cover = coverRect(cw, ch);
+        ctx.drawImage(off, cover.x, cover.y, sim.W * cover.scale, sim.H * cover.scale);
       } else {
         // draw the surface as a receding plane, one horizontal strip per screen row
         const W = sim.W, H = sim.H, denom = 1 + beta;
@@ -136,7 +156,7 @@ export function useWaterEngine(
           ctx.drawImage(off, 0, srcRow, W, 1, (cw - destW) * 0.5, j, destW, 1);
         }
       }
-      optsRef.current.overlay?.(ctx, cw, ch);
+      optsRef.current.overlay?.(ctx, cw, ch, cover);
     };
     const tick = () => {
       if (!optsRef.current.isPaused?.()) {

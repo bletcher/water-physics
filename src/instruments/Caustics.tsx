@@ -11,15 +11,26 @@ import { WindControls } from '../components/WindControls';
 import { Details } from '../components/Details';
 import { CausticsCrossSection } from '../components/CausticsCrossSection';
 import { drawSun, drawWindArrow } from '../overlays';
+import { useGuide } from '../shell/GuideContext';
 
 /**
  * Caustics — sunlight refracted through the moving surface, focused onto the
  * pool floor. Beer–Lambert depth tint; the rock casts a soft shadow.
  */
 export function Caustics() {
-  const sim = useMemo(() => new WaterSim(), []);
+  const sim = useMemo(() => new WaterSim(320, 180), []);
   const renderer = useMemo(() => new CausticsRenderer(), []);
   const wind = useMemo(() => new WindField(), []);
+  const { setGuide } = useGuide();
+  useEffect(() => {
+    setGuide({
+      eyebrow: 'Caustics',
+      title: 'Light on the pool floor',
+      seeing: 'Sunlight refracts through the moving surface and focuses into the dancing net on the floor.',
+      painting: 'Paint caustics as bright, wobbling, broken lines — brightest where the water curves.',
+    });
+    return () => setGuide(null);
+  }, [setGuide]);
 
   const [c, setC] = useState(0.42);
   const [damp, setDamp] = useState(0.995);
