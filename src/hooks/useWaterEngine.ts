@@ -81,11 +81,14 @@ export function useWaterEngine(
       return (1 - k) / k;
     };
 
-    // where the sim rect lands on the canvas, scaled to *cover* it (crop overflow)
-    // so the surface fills the screen at a fixed aspect, without distortion.
+    // where the sim rect lands on the canvas. We fit to the viewport WIDTH and
+    // centre vertically, so the full horizontal extent is always visible (the
+    // ripple's origin, the wandering boat, the far swells never fall off the
+    // sides). Tall/portrait screens letterbox top & bottom; wide screens crop a
+    // little top & bottom, exactly as the old "cover" did. No distortion.
     const coverRect = (cw: number, ch: number) => {
-      const scale = Math.max(cw / sim.W, ch / sim.H);
-      return { x: (cw - sim.W * scale) / 2, y: (ch - sim.H * scale) / 2, scale };
+      const scale = cw / sim.W;
+      return { x: 0, y: (ch - sim.H * scale) / 2, scale };
     };
 
     // ---- pointer interaction ----
@@ -142,8 +145,9 @@ export function useWaterEngine(
       const beta = viewBeta();
       let cover = { x: 0, y: 0, scale: cw / sim.W };
       if (beta === 0) {
-        // fixed-aspect cover: uniform scale to fill the canvas, cropping the overflow
+        // fit-to-width; fill the letterbox margins (top/bottom) with ink
         cover = coverRect(cw, ch);
+        if (cover.y > 0.5) { ctx.fillStyle = '#0e1217'; ctx.fillRect(0, 0, cw, ch); }
         ctx.drawImage(off, cover.x, cover.y, sim.W * cover.scale, sim.H * cover.scale);
       } else {
         // draw the surface as a receding plane, one horizontal strip per screen row
@@ -160,7 +164,16 @@ export function useWaterEngine(
           ctx.drawImage(off, 0, srcRow, W, 1, (cw - destW) * 0.5, j, destW, 1);
         }
       }
-      optsRef.current.overlay?.(ctx, cw, ch, cover);
+      if (beta === 0) {
+        // draw gizmos (sun, wind, boat) inside the scene rect, so they track the
+        // letterboxed water rather than the full canvas / its dark margins
+        ctx.save();
+        ctx.translate(cover.x, cover.y);
+        optsRef.current.overlay?.(ctx, sim.W * cover.scale, sim.H * cover.scale, { x: 0, y: 0, scale: cover.scale });
+        ctx.restore();
+      } else {
+        optsRef.current.overlay?.(ctx, cw, ch, cover);
+      }
     };
     const tick = () => {
       if (!optsRef.current.isPaused?.()) {
