@@ -191,6 +191,26 @@ body {
 .guide .g-terms dt { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; color: var(--pearl); }
 .guide .g-terms dd { margin: 0; font-size: 12.5px; line-height: 1.45; color: var(--dim); }
 
+/* ---- styled tooltip (portalled): same glass/verdigris feel as "the equation" ---- */
+.tip {
+  position: fixed; z-index: 60; pointer-events: none;
+  max-width: 256px; padding: 9px 12px;
+  font-family: "IBM Plex Sans", system-ui, sans-serif;
+  font-size: 12.5px; line-height: 1.5; color: #cdd6d5;
+  background: var(--glass);
+  backdrop-filter: blur(16px) saturate(1.3); -webkit-backdrop-filter: blur(16px) saturate(1.3);
+  border: 1px solid rgba(127,183,163,0.32);
+  border-radius: 9px;
+  box-shadow: 0 16px 44px -22px rgba(0,0,0,0.9);
+  transform: translate(-50%, -100%);
+  animation: tip-in 0.13s ease both;
+}
+.tip-below { transform: translate(-50%, 0); }
+@keyframes tip-in { from { opacity: 0; transform: translate(-50%, calc(-100% + 3px)); } }
+@keyframes tip-in-below { from { opacity: 0; } }
+.tip-below { animation-name: tip-in-below; }
+@media (prefers-reduced-motion: reduce) { .tip { animation: none; } }
+
 /* ---- Adjust sheet = the instrument's control panel ---- */
 .panel {
   position: fixed; left: 50%; bottom: calc(74px + env(safe-area-inset-bottom)); z-index: 8;

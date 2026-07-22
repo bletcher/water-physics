@@ -1,3 +1,5 @@
+import { useTip } from '../shell/TooltipContext';
+
 interface SliderProps {
   label: string;
   /** the numeric value bound to the range input */
@@ -14,8 +16,9 @@ interface SliderProps {
 
 /** A labelled range input with a live monospace value readout. */
 export function Slider({ label, value, display, min, max, step, onChange, hint }: SliderProps) {
+  const tip = useTip(hint);
   return (
-    <div className="ctl" title={hint}>
+    <div className="ctl" {...tip}>
       <label>
         {label} <span className="val">{display}</span>
       </label>

@@ -9,6 +9,7 @@ import { ToggleButton } from '../components/ToggleButton';
 import { WindControls } from '../components/WindControls';
 import { SunDial } from '../components/SunDial';
 import { Details } from '../components/Details';
+import { useTip } from '../shell/TooltipContext';
 import { drawSun, drawBoat, drawWindArrow } from '../overlays';
 import { hexToRgb } from '../color';
 import { useGuide } from '../shell/GuideContext';
@@ -27,6 +28,7 @@ export function Wake() {
   const wind = useMemo(() => new WindField(), []);
   const { setGuide } = useGuide();
   const { palette, valueStudy } = usePalette();
+  const splashTip = useTip('Drop a one-off splash in the centre.');
   useEffect(() => {
     setGuide({
       eyebrow: 'Wake',
@@ -153,7 +155,7 @@ export function Wake() {
         </div>
         <div className="row">
           <ToggleButton label="wedge guide" pressed={wedge} onToggle={() => setWedge((v) => !v)} hint="Show the dashed ~19.5° Kelvin wedge lines the wake fills." />
-          <button onClick={() => sim.drop(sim.W * 0.5, sim.H * 0.5, 2, 3.2)} title="Drop a one-off splash in the centre.">splash</button>
+          <button onClick={() => sim.drop(sim.W * 0.5, sim.H * 0.5, 2, 3.2)} {...splashTip}>splash</button>
           <button onClick={reset}>reset</button>
           <ToggleButton label={paused ? 'frozen' : 'freeze'} pressed={paused} onToggle={() => setPaused((v) => !v)} />
         </div>

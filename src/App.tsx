@@ -4,6 +4,8 @@ import { GuideProvider } from './shell/GuideProvider';
 import { useGuide } from './shell/GuideContext';
 import { PaletteProvider } from './shell/PaletteProvider';
 import { usePalette } from './shell/PaletteContext';
+import { TooltipProvider } from './shell/TooltipProvider';
+import { useTooltip } from './shell/TooltipContext';
 import { ColorPicker } from './components/ColorPicker';
 import { ToggleButton } from './components/ToggleButton';
 import { useChrome } from './hooks/useChrome';
@@ -34,6 +36,7 @@ function Shell() {
   const awake = useChrome();
   const { guide } = useGuide();
   const { palette, setPalette, valueStudy, setValueStudy, resetColours } = usePalette();
+  const { show: showTip, hide: hideTip } = useTooltip();
 
   const idx = ROOMS.findIndex((r) => r.id === active);
   const room = ROOMS[idx];
@@ -94,14 +97,18 @@ function Shell() {
                   const go = g.onStep!;
                   const on = k === g.progress!.i;
                   const label = g.stepLabels?.[k] ?? `Step ${k + 1}`;
+                  const tip = `${k + 1}. ${label}`;
                   return (
                     <button
                       key={k}
                       className={'g-dot' + (on ? ' on' : '')}
-                      title={`${k + 1}. ${label}`}
                       aria-label={`Go to step ${k + 1}: ${label}`}
                       aria-current={on}
                       onClick={() => go(k)}
+                      onMouseEnter={(e) => showTip(tip, e.currentTarget.getBoundingClientRect())}
+                      onMouseLeave={hideTip}
+                      onFocus={(e) => showTip(tip, e.currentTarget.getBoundingClientRect())}
+                      onBlur={hideTip}
                     />
                   );
                 })}
@@ -204,7 +211,9 @@ export default function App() {
   return (
     <PaletteProvider>
       <GuideProvider>
-        <Shell />
+        <TooltipProvider>
+          <Shell />
+        </TooltipProvider>
       </GuideProvider>
     </PaletteProvider>
   );

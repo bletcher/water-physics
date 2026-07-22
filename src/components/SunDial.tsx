@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import type { PointerEvent as RPointerEvent, KeyboardEvent as RKeyboardEvent } from 'react';
+import { useTip } from '../shell/TooltipContext';
 
 interface Props {
   /** azimuth, degrees around the pool (matches the on-canvas sun marker) */
@@ -19,6 +20,7 @@ interface Props {
  */
 export function SunDial({ deg, elevation, minEl = 8, maxEl = 90, onChange }: Props) {
   const padRef = useRef<HTMLDivElement>(null);
+  const tip = useTip('Drag the sun. Around the dial sets its compass direction; in and out sets its height — centre is straight overhead (midday), the rim is a low sun on the horizon.');
 
   const rFrac = Math.max(0, Math.min(1, (maxEl - elevation) / (maxEl - minEl)));
   const az = (deg * Math.PI) / 180;
@@ -58,7 +60,7 @@ export function SunDial({ deg, elevation, minEl = 8, maxEl = 90, onChange }: Pro
   };
 
   return (
-    <div className="ctl sundial" title="Drag the sun. Around the dial sets its compass direction; in and out sets its height — centre is straight overhead (midday), the rim is a low sun on the horizon.">
+    <div className="ctl sundial" {...tip}>
       <label>sun position <span className="val">{deg}° · {elevation}°</span></label>
       <div
         ref={padRef}

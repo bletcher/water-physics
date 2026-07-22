@@ -1,3 +1,5 @@
+import { useTip } from '../shell/TooltipContext';
+
 interface ToggleButtonProps {
   label: string;
   pressed: boolean;
@@ -8,8 +10,9 @@ interface ToggleButtonProps {
 
 /** A button that reflects an on/off state via aria-pressed (styled in CSS). */
 export function ToggleButton({ label, pressed, onToggle, hint }: ToggleButtonProps) {
+  const tip = useTip(hint);
   return (
-    <button aria-pressed={pressed} onClick={onToggle} title={hint}>
+    <button aria-pressed={pressed} onClick={onToggle} {...tip}>
       {label}
     </button>
   );
