@@ -71,10 +71,11 @@ export const LESSONS: LessonStep[] = [
     formula: {
       expr: '∂²h/∂t² = c²∇²h',
       terms: [
-        { sym: 'h', desc: 'surface height at a point' },
-        { sym: 't', desc: 'time' },
-        { sym: 'c', desc: 'wave speed' },
-        { sym: '∇²h', desc: 'how far a point sits above or below its neighbours (curvature)' },
+        { sym: 'h', desc: 'the surface height at a point' },
+        { sym: '∂ …', desc: 'the “∂” just means “a tiny change in”. So ∂h/∂t is how fast the height is moving up or down.' },
+        { sym: '∂²h/∂t²', desc: 'the change of that change — the surface’s up-and-down acceleration (how fast its motion speeds up or slows). This is the left side of the equation.' },
+        { sym: 'c', desc: 'the wave speed' },
+        { sym: '∇²h', desc: 'curvature — how far the point sits above or below the average of its neighbours. The surface is always pulled toward that average, which is what makes rings spread.' },
       ],
     },
     configure: (c) => { reset(c.sim); },
