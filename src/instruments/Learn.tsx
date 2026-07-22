@@ -144,16 +144,16 @@ export function Learn() {
           <>
             <div className="controls">
               {step.controls.includes('damping') && (
-                <Slider label="calm" value={damping} display={damping.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamping} />
+                <Slider label="calm" value={damping} display={damping.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamping} hint="How quickly ripples fade. Toward 1 the water stays lively for longer; lower calms it fast." />
               )}
               {step.controls.includes('light') && (
                 <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
               )}
               {step.controls.includes('curve') && (
-                <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />
+                <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} hint="Bow the coastline in or out, so the swells refract to follow it." />
               )}
               {step.controls.includes('view') && (
-                <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+                <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} hint="Tilt the camera from straight-down to a low, glancing view." />
               )}
               {step.controls.includes('wind') && (
                 <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
@@ -161,7 +161,7 @@ export function Learn() {
             </div>
             {step.controls.includes('isolate') && (
               <div className="row">
-                <ToggleButton label="light only" pressed={isolate} onToggle={() => setIsolate((v) => !v)} />
+                <ToggleButton label="light only" pressed={isolate} onToggle={() => setIsolate((v) => !v)} hint="Hide the floor and colour, leaving only the bright light-net the surface casts." />
               </div>
             )}
           </>

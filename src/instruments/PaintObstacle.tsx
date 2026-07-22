@@ -138,15 +138,15 @@ export function PaintObstacle() {
             ∂²h/∂t² = <b>({c.toFixed(2)})²</b>∇²h − <b>{(1 - damp).toFixed(3)}</b>·∂h/∂t · wall: <b>h = 0</b>
           </div>
           <div className="controls">
-            <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} />
-            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
+            <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} hint="How fast waves travel — longer waves bend around obstacles more easily." />
+            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} hint="How quickly waves fade. Toward 1 they linger; lower calms the water fast." />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
-            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} hint="Tilt the camera from straight-down to a low, glancing view." />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
           <div className="row">
-            <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
+            <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} hint="Drip at a fixed point so waves keep washing over your wall." />
           </div>
         </Details>
       </div>

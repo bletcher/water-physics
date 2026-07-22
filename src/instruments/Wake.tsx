@@ -48,8 +48,8 @@ export function Wake() {
   const boat = useRef({ x: 40, y: 80, vx: 1.3, vy: 0, heading: 0 });
   const steer = useRef({ x: 0, y: 0, t: -1 });
 
-  const [boatSpeed, setBoatSpeed] = useState(2);
-  const [gravity, setGravity] = useState(0.75);
+  const [boatSpeed, setBoatSpeed] = useState(0.8);
+  const [gravity, setGravity] = useState(0.2);
   const [damp, setDamp] = useState(0.997);
   const [lightDeg, setLightDeg] = useState(230);
   const [elevation, setElevation] = useState(45);
@@ -148,12 +148,12 @@ export function Wake() {
 
       <div className="panel">
         <div className="controls">
-          <Slider label="boat speed" value={boatSpeed} display={boatSpeed.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setBoatSpeed} />
-          <Slider label="gravity" value={gravity} display={gravity.toFixed(2)} min={0.2} max={1.8} step={0.05} onChange={setGravity} />
+          <Slider label="boat speed" value={boatSpeed} display={boatSpeed.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setBoatSpeed} hint="How fast the boat travels. The wake keeps the same ~19.5° angle whatever the speed." />
+          <Slider label="gravity" value={gravity} display={gravity.toFixed(2)} min={0.02} max={1.8} step={0.02} onChange={setGravity} hint="Sets how much faster long waves travel than short ones — lower gravity gives a longer, more feathered wake." />
         </div>
         <div className="row">
-          <ToggleButton label="wedge guide" pressed={wedge} onToggle={() => setWedge((v) => !v)} />
-          <button onClick={() => sim.drop(sim.W * 0.5, sim.H * 0.5, 2, 3.2)}>splash</button>
+          <ToggleButton label="wedge guide" pressed={wedge} onToggle={() => setWedge((v) => !v)} hint="Show the dashed ~19.5° Kelvin wedge lines the wake fills." />
+          <button onClick={() => sim.drop(sim.W * 0.5, sim.H * 0.5, 2, 3.2)} title="Drop a one-off splash in the centre.">splash</button>
           <button onClick={reset}>reset</button>
           <ToggleButton label={paused ? 'frozen' : 'freeze'} pressed={paused} onToggle={() => setPaused((v) => !v)} />
         </div>
@@ -163,8 +163,8 @@ export function Wake() {
             moving source on deep water · dispersion sets the <b>Kelvin wedge ≈ 19.5°</b>, whatever the speed
           </div>
           <div className="controls">
-            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.98} max={0.999} step={0.001} onChange={setDamp} />
-            <Slider label="corner shape" value={corner} display={corner === 0 ? 'square' : corner >= 1 ? 'round' : corner.toFixed(2)} min={0} max={1} step={0.02} onChange={setCorner} />
+            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.98} max={0.999} step={0.001} onChange={setDamp} hint="How quickly the wake fades behind the boat. Toward 1 the trail lingers longer." />
+            <Slider label="corner shape" value={corner} display={corner === 0 ? 'square' : corner >= 1 ? 'round' : corner.toFixed(2)} min={0} max={1} step={0.02} onChange={setCorner} hint="Round off the pool's corners, from a square tank to a round bowl." />
             <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>

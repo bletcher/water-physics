@@ -8,12 +8,14 @@ interface SliderProps {
   max: number;
   step: number;
   onChange: (value: number) => void;
+  /** optional hover tooltip explaining what the control does */
+  hint?: string;
 }
 
 /** A labelled range input with a live monospace value readout. */
-export function Slider({ label, value, display, min, max, step, onChange }: SliderProps) {
+export function Slider({ label, value, display, min, max, step, onChange, hint }: SliderProps) {
   return (
-    <div className="ctl">
+    <div className="ctl" title={hint}>
       <label>
         {label} <span className="val">{display}</span>
       </label>

@@ -58,7 +58,7 @@ export function SunDial({ deg, elevation, minEl = 8, maxEl = 90, onChange }: Pro
   };
 
   return (
-    <div className="ctl sundial">
+    <div className="ctl sundial" title="Drag the sun. Around the dial sets its compass direction; in and out sets its height — centre is straight overhead (midday), the rim is a low sun on the horizon.">
       <label>sun position <span className="val">{deg}° · {elevation}°</span></label>
       <div
         ref={padRef}

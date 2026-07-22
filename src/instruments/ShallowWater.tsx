@@ -120,15 +120,15 @@ export function ShallowWater() {
 
       <div className="panel">
         <div className="row" role="group" aria-label="tap tool">
-          <ToggleButton label="drop water" pressed={tool === 'water'} onToggle={() => setTool('water')} />
-          <ToggleButton label="drop object" pressed={tool === 'object'} onToggle={() => setTool('object')} />
+          <ToggleButton label="drop water" pressed={tool === 'water'} onToggle={() => setTool('water')} hint="Tap the water to make a splash." />
+          <ToggleButton label="drop object" pressed={tool === 'object'} onToggle={() => setTool('object')} hint="Tap or drag to place rocks that the waves reflect and bend around." />
         </div>
         <div className="controls">
-          <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} />
-          <Slider label="wave speed" value={cMax} display={cMax.toFixed(2)} min={0.2} max={0.6} step={0.01} onChange={setCMax} />
+          <Slider label="shore curvature" value={curve} display={curve.toFixed(2)} min={-0.4} max={0.4} step={0.02} onChange={setCurve} hint="Bow the coastline in or out, so incoming swells refract to follow it." />
+          <Slider label="wave speed" value={cMax} display={cMax.toFixed(2)} min={0.2} max={0.6} step={0.01} onChange={setCMax} hint="Wave speed in the deep water at left; waves slow as they reach the shallows." />
         </div>
         <div className="row">
-          <ToggleButton label="incoming swell" pressed={swell} onToggle={() => setSwell((v) => !v)} />
+          <ToggleButton label="incoming swell" pressed={swell} onToggle={() => setSwell((v) => !v)} hint="Keep sending in swells from the left automatically." />
           <button onClick={() => sim.clearMask()}>clear objects</button>
           <button onClick={() => sim.clear()}>reset</button>
           <SimToggles
@@ -144,11 +144,11 @@ export function ShallowWater() {
             c(x,y) = <b>{cMax.toFixed(2)}</b>·√depth · shallow ⇒ <b>slow, refract &amp; shoal</b>
           </div>
           <div className="controls">
-            <Slider label="shore steepness" value={shoreCurve} display={shoreCurve.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setShoreCurve} />
-            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
+            <Slider label="shore steepness" value={shoreCurve} display={shoreCurve.toFixed(1)} min={0.4} max={3} step={0.1} onChange={setShoreCurve} hint="How steeply the bottom rises to the beach — steeper shoals the waves sooner." />
+            <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} hint="How quickly waves fade. Toward 1 they linger; lower calms the water fast." />
             <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
-            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} hint="Tilt the camera from straight-down to a low, glancing view." />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
         </Details>

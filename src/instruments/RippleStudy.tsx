@@ -101,11 +101,11 @@ export function RippleStudy() {
 
       <div className="panel">
         <div className="controls">
-          <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} />
-          <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} />
+          <Slider label="wave speed c" value={c} display={c.toFixed(2)} min={0.1} max={0.62} step={0.01} onChange={setC} hint="How fast ripples travel across the surface." />
+          <Slider label="damping" value={damp} display={damp.toFixed(3)} min={0.96} max={0.999} step={0.001} onChange={setDamp} hint="How quickly ripples fade. Toward 1 the water holds a ripple a long time; lower calms the pond fast." />
         </div>
         <div className="row">
-          <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} />
+          <ToggleButton label="steady drip" pressed={dripping} onToggle={() => setDripping((v) => !v)} hint="Drip at a fixed point so rings keep hitting the rock." />
           <button onClick={() => sim.clear()}>reset</button>
           <SimToggles
             infinite={infinite}
@@ -120,15 +120,15 @@ export function RippleStudy() {
             ∂²h/∂t² = <b>({c.toFixed(2)})²</b>∇²h − <b>{(1 - damp).toFixed(3)}</b>·∂h/∂t
           </div>
           <div className="controls">
-            <Slider label="corner shape" value={corner} display={corner === 0 ? 'square' : corner >= 1 ? 'round' : corner.toFixed(2)} min={0} max={1} step={0.02} onChange={setCorner} />
+            <Slider label="corner shape" value={corner} display={corner === 0 ? 'square' : corner >= 1 ? 'round' : corner.toFixed(2)} min={0} max={1} step={0.02} onChange={setCorner} hint="Round off the pond's corners, from a square tank to a round bowl." />
             <Slider label="drop size" value={dropR} display={dropR.toFixed(1)} min={1.5} max={8} step={0.5} onChange={setDropR} />
             <Slider label="rock radius" value={rockR} display={`${rockR} px`} min={6} max={30} step={1} onChange={setRockR} />
             <SunDial deg={lightDeg} elevation={elevation} onChange={(d, el) => { setLightDeg(d); setElevation(el); }} />
-            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} />
+            <Slider label="view angle" value={viewDeg} display={`${viewDeg}°`} min={0} max={65} step={1} onChange={setViewDeg} hint="Tilt the camera from straight-down to a low, glancing view." />
             <WindControls speed={windSpeed} onSpeed={setWindSpeed} deg={windDeg} onDeg={setWindDeg} />
           </div>
           <div className="row">
-            <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} />
+            <ToggleButton label="rain" pressed={raining} onToggle={() => setRaining((v) => !v)} hint="Scatter random drops all over, like rainfall." />
           </div>
         </Details>
       </div>
