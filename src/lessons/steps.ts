@@ -49,6 +49,7 @@ function reset(sim: WaterSim) {
   sim.c = 0.42;
   sim.c2Field = null;
   sim.boundary = 'open';
+  sim.sponge = true;   // absorbing edges by default; the shore step turns this off
 }
 
 function placeRock(sim: WaterSim, fx: number, fy: number, r: number) {
@@ -213,6 +214,7 @@ export const LESSONS: LessonStep[] = [
     },
     configure: (c) => {
       reset(c.sim);
+      c.sim.sponge = false;   // swells enter at the left edge here — keep them
       buildShoreFields(c.sim.W, c.sim.H, c.depth, c.c2, { cMax: 0.5, shoreCurve: 1.4, curve: 0 });
       c.sim.c2Field = c.c2;
       c.sim.c = 0.5;

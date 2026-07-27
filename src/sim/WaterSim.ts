@@ -40,6 +40,12 @@ export class WaterSim {
   /** edge behaviour: reflecting walls, or open (infinite) water */
   boundary: Boundary = 'open';
   /**
+   * When open, also run an absorbing sponge near the edges so outgoing waves are
+   * soaked up at any angle (the Mur boundary alone leaks a little at a slant).
+   * Turned off where energy is injected right at an edge (e.g. shoreline swells).
+   */
+  sponge = true;
+  /**
    * Optional per-cell c² for spatially-varying wave speed (shallow water:
    * c ∝ √depth ⇒ c² ∝ depth). When null, the scalar `c` is used everywhere.
    */
@@ -159,11 +165,31 @@ export class WaterSim {
         hNext[i] = (2 * hCurr[i] - hPrev[i] + c2 * lap) * damp;
       }
     }
+    // soak up outgoing waves in a border band, then handle the very edge cells.
+    // Together these make an open pool read as truly infinite — no bounce-back.
+    if (this.boundary === 'open' && this.sponge) this.absorbEdges(hNext);
     this.applyBoundary();
     // rotate buffers
     this.hPrev = hCurr;
     this.hCurr = hNext;
     this.hNext = hPrev;
+  }
+
+  /**
+   * Absorbing sponge: progressively damp a band of cells near the four edges so
+   * outgoing ripples fade out instead of reflecting — and unlike the first-order
+   * Mur boundary, it works at any angle of incidence. Strongest at the very edge,
+   * easing to nothing at the inner edge of the band so the ramp itself doesn't
+   * reflect.
+   */
+  private absorbEdges(h: Float32Array): void {
+    const { W, H } = this;
+    const B = 16;
+    for (let bnd = 0; bnd < B; bnd++) {
+      const f = 0.80 + 0.20 * (bnd / B);
+      for (let x = 0; x < W; x++) { h[bnd * W + x] *= f; h[(H - 1 - bnd) * W + x] *= f; }
+      for (let y = 0; y < H; y++) { h[y * W + bnd] *= f; h[y * W + (W - 1 - bnd)] *= f; }
+    }
   }
 
   /**

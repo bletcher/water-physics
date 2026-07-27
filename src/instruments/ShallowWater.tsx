@@ -81,6 +81,7 @@ export function ShallowWater() {
     sim.rockR = 0;
     sim.rock.x = -100;
     sim.rock.y = -100;
+    sim.sponge = false;   // swells are injected at the left edge — don't absorb them there
     injectSwell(sim, 12);
     injectSwell(sim, 48);
     injectSwell(sim, 84);
