@@ -31,7 +31,6 @@ export function Caustics() {
       eyebrow: 'Light on the Floor',
       title: 'The dancing net of light',
       seeing: 'Sunlight refracts through the moving surface and focuses into the dancing net on the floor.',
-      painting: 'Block in the dark floor first, then lay the bright net on top — wobbling, broken lines, brightest where the surface curves. Turn on “value study” to strip it down to just those flat light-and-dark shapes.',
       deeper: 'Light bends as it crosses from air into water — refraction, Snell’s law, with water’s index about 1.33. The wavy surface acts like a shifting lens: where it bulges it spreads light out, where it dips it concentrates it into bright lines on the floor. Those focal lines are the caustics, and they dance because the lens keeps moving. Deeper water also absorbs more light, so colour drains from red toward blue.',
       formula: {
         expr: 'n₁ sinθ₁ = n₂ sinθ₂',

@@ -12,7 +12,6 @@ export interface Guide {
   eyebrow: string;
   title: string;
   seeing: string;
-  painting: string;
   /** optional "Dig deeper" — how the physics actually works */
   deeper?: string;
   /** optional key equation + its variables, shown in an expandable inside "Dig deeper" */

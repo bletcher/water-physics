@@ -5,7 +5,6 @@
   --text: #c8d3d6;
   --dim: #77848c;
   --verdigris: #7fb7a3;
-  --ochre: #d98a4e;
   --glass: rgba(12, 16, 21, 0.58);
   --edge: rgba(170, 205, 205, 0.14);
   --pearl: #e6eceb;
@@ -92,8 +91,6 @@ body {
 .guide .g-eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--verdigris); }
 .guide h2 { font-family: "Fraunces", serif; font-weight: 500; font-size: clamp(23px, 3.2vw, 31px); line-height: 1.08; letter-spacing: -0.01em; color: var(--pearl); text-wrap: balance; }
 .guide .g-seeing { font-size: clamp(14.5px, 1.7vw, 16px); line-height: 1.6; color: #cdd6d6; max-width: 34ch; }
-.guide .g-paint { border-left: 2px solid var(--ochre); padding-left: 13px; font-style: italic; font-size: clamp(14px, 1.6vw, 15.5px); line-height: 1.55; color: var(--pearl); max-width: 32ch; }
-.guide .g-paint b { display: block; font-family: "IBM Plex Mono", monospace; font-style: normal; font-size: 10px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ochre); margin-bottom: 6px; }
 .guide .g-steps { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
 .guide .g-arrow { font: inherit; font-size: 15px; line-height: 1; color: var(--pearl); background: rgba(170,205,205,0.08); border: 1px solid var(--edge); border-radius: 999px; width: 30px; height: 30px; display: grid; place-items: center; cursor: pointer; padding: 0; }
 .guide .g-arrow:hover { border-color: var(--verdigris); }

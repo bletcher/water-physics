@@ -59,7 +59,7 @@ function Shell() {
   useEffect(() => { if (!canAdjust) setAdjustOpen(false); }, [canAdjust]);
 
   // guide content: what the room registered, or a fallback while it mounts
-  const g = guide ?? { eyebrow: room.name, title: room.name, seeing: room.blurb, painting: '' };
+  const g = guide ?? { eyebrow: room.name, title: room.name, seeing: room.blurb };
 
   const cls = ['app', awake ? 'awake' : '', adjustOpen ? 'adjust-open' : '', roomsOpen ? 'rooms-open' : '']
     .filter(Boolean).join(' ');
@@ -85,9 +85,6 @@ function Shell() {
         <div className="g-eyebrow">{g.eyebrow}</div>
         <h2>{g.title}</h2>
         <p className="g-seeing">{g.seeing}</p>
-        {g.painting && (
-          <div className="g-paint"><b>For painting</b>{g.painting}</div>
-        )}
         {g.onPrev && g.onNext && (
           <div className="g-steps">
             <button className="g-arrow" onClick={g.onPrev} aria-label="Previous step">‹</button>

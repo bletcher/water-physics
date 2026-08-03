@@ -24,7 +24,6 @@ export interface LessonStep {
   title: string;
   body: string;
   tryThis: string;
-  painting: string;
   renderer: RendererKey;
   controls: LessonControl[];
   /** optional "Dig deeper" — how the physics actually works */
@@ -65,7 +64,6 @@ export const LESSONS: LessonStep[] = [
     title: 'A disturbance makes rings',
     body: 'Drop something into still water and rings spread out from that point — evenly spaced, all travelling outward at the same speed.',
     tryThis: 'Tap the water a few times and watch the rings expand.',
-    painting: 'Real ripples are concentric and regular. Space them evenly and let them grow — the most common mistake is scattering them at random.',
     renderer: 'ripple',
     controls: [],
     deeper: 'Every point on the surface is pulled toward the average height of its neighbours, so a local dip or bump can’t sit still — it spreads outward as a ring. All the rings travel at the same wave speed, which is why they stay concentric and evenly spaced.',
@@ -87,7 +85,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Ripples fade as they travel',
     body: 'Water loses energy as it moves, so older and farther rings sink lower and soften. Deep, still water holds a ripple a long time; shallow or muddy water forgets it fast.',
     tryThis: 'Slide “calm” up and down and watch how long the surface keeps moving.',
-    painting: 'Keep your sharpest, highest-contrast ripples near the source, and soften and flatten them as they move outward.',
     renderer: 'ripple',
     controls: ['damping'],
     deeper: 'Real water has drag, so a little energy is lost every cycle. Each ripple’s height decays by roughly the same fraction per unit time — an exponential fade — so the oldest, farthest rings are always the faintest.',
@@ -108,7 +105,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Waves bounce off edges',
     body: 'A rock or a bank reflects waves back the way they came, like a mirror. The returning rings then cross the incoming ones.',
     tryThis: 'Watch the rings hit the rock and travel back out.',
-    painting: 'Near rocks and banks you’ll see two sets of ripples overlapping — the incoming ones and their reflections.',
     renderer: 'ripple',
     controls: [],
     deeper: 'A rock or bank is a wall the water can’t cross, so a wave hitting it bounces straight back like light off a mirror — leaving at the same angle it arrived. The returning rings then ride back out over the incoming ones.',
@@ -127,7 +123,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Crossing waves interfere',
     body: 'Where two crests meet, the water piles higher; where a crest meets a trough, they cancel to flat. Together they weave a shifting diamond mesh.',
     tryThis: 'Two sources are running — watch the crosshatch of light between them.',
-    painting: 'That sparkling net of light-and-dark diamonds is what reads as “water.” Suggest the pattern; don’t draw every diamond.',
     renderer: 'ripple',
     controls: [],
     deeper: 'When two ripples overlap, their heights simply add. Crest on crest piles up higher and brighter; crest on trough cancels to flat. That running sum, shifting as the waves move, is the diamond mesh.',
@@ -148,7 +143,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Waves bend around obstacles',
     body: 'Waves curl around the sides of a rock and fill the calm behind it — there is no hard shadow, just gentler water.',
     tryThis: 'Watch the water just behind the rock.',
-    painting: 'Water wraps around rocks. Keep the surface continuous behind them — quieter, but never a sharp empty edge.',
     renderer: 'ripple',
     controls: [],
     deeper: 'Waves don’t stop dead at an edge — they bend around it and spill into the calm behind. How far they wrap depends on wavelength versus the obstacle’s size: long waves curl right around, short ones leave a sharper shadow.',
@@ -168,7 +162,6 @@ export const LESSONS: LessonStep[] = [
     title: 'The sun: angle and height',
     body: 'Highlights sit on the slopes facing the sun. Its compass angle sets which side they land on; its height sets their shape — a high midday sun makes small tight sparkles, a low sun stretches them into long grazing reflections.',
     tryThis: 'Swing the light angle, then drop the light height and watch the highlights stretch into a low-sun glare. The sun marker shows where the light is.',
-    painting: 'Match the highlight shape to the sun: crisp dots under a high sun, long streaks under a low one — always on the sun-facing side, and move them together when the light moves.',
     renderer: 'ripple',
     controls: ['light', 'height'],
     deeper: 'A highlight appears wherever the surface tilts so that it mirrors the sun straight to your eye — angle in equals angle out. The sun’s compass direction picks which slopes catch it; its height sets the shape, because a low sun grazes the water and smears each glint into a long streak.',
@@ -189,7 +182,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Wind ruffles the water',
     body: 'Wind rakes the surface into countless small waves that travel with it, their crests lined up across the wind. Gusts scud through as darker ruffled patches — “cat’s paws” — and a hard wind tears the crests into whitecaps and flattens the mirror.',
     tryThis: 'Raise the wind and swing its direction. Watch the ripples line up and drift downwind, the gusts race across, and the reflections break up.',
-    painting: 'Let one wind direction organise the whole surface — crests across the wind, texture drifting one way. Drop in a few darker cat’s-paw patches, and add white flecks only where it blows hard.',
     renderer: 'ripple',
     controls: ['wind'],
     deeper: 'Wind drags on the surface and piles the water into small waves that run with it, their crests lined up across the wind. The stronger it blows, the longer it blows, and the more open water it crosses, the bigger those waves grow — until the crests steepen past breaking and tear into whitecaps.',
@@ -200,7 +192,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Shallow water turns toward shore',
     body: 'As the bottom rises toward a beach, waves slow down, bunch closer together, swing around to face the shore, and break into foam.',
     tryThis: 'Bend the shoreline and watch the swells curve to follow it.',
-    painting: 'Near shore, waves line up parallel to the beach and whiten as they break. The colour warms from deep teal to sandy green.',
     renderer: 'shallow',
     controls: ['curve'],
     deeper: 'In shallow water the wave speed drops with depth (c ∝ √depth). The part of a crest still in deep water outruns the part in the shallows, so the whole wavefront swings around to line up with the shore — refraction — while it also bunches up, steepens, and finally breaks.',
@@ -229,7 +220,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Light focuses on the bottom',
     body: 'In clear shallow water the wavy surface works like a lens, bending sunlight into a bright, dancing net on the floor. It is brightest where the surface bulges.',
     tryThis: 'Watch the moving light on the pool floor, then flip “light only” to see just the net the surface casts.',
-    painting: 'Paint them as bright, wobbling, uneven lines — brightest where the water curves. Broken lines suggest their constant motion.',
     renderer: 'caustics',
     controls: ['isolate'],
     crossSection: true,
@@ -250,7 +240,6 @@ export const LESSONS: LessonStep[] = [
     title: 'Choose your viewpoint',
     body: 'The same water looks completely different from straight above versus a low, glancing angle.',
     tryThis: 'Tilt the view from overhead down to an oblique angle.',
-    painting: 'From above you read the surface pattern and the caustics; from a low angle you read reflections and the sky. Decide which story your painting tells before you begin.',
     renderer: 'caustics',
     controls: ['view', 'isolate'],
     deeper: 'Looking straight down, most of the light reaching you comes up from the lit floor, so you read the surface pattern and the caustics. Tilt to a low angle and the surface turns mirror-like, bouncing the sky and reflections toward you instead — the shallower your line of sight, the more it reflects (the Fresnel effect).',

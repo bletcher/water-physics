@@ -29,7 +29,6 @@ export function RippleStudy() {
       eyebrow: 'Ripple Study',
       title: 'Rings, reflection, interference',
       seeing: 'Tap to drop rings; drag the rock. Rings reflect off it and cross into a shifting mesh.',
-      painting: 'That crossing sparkle is what reads as water — two ripple sets meet near the rock.',
       deeper: 'The surface is a height field ruled by the wave equation: each point is pulled toward the average of its neighbours, so a disturbance spreads outward as rings. The rock is a wall the waves can’t enter, so they bounce off it; where two ring-sets overlap they simply add — crest on crest builds up, crest on trough cancels — which is the shimmering mesh. Damping sets how fast the pond loses that energy and goes still.',
       formula: {
         expr: '∂²h/∂t² = c²∇²h',

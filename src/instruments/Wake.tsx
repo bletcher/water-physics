@@ -34,7 +34,6 @@ export function Wake() {
       eyebrow: 'Wake',
       title: 'A boat and its wake',
       seeing: 'The boat wanders on its own — drag to steer it. Its trailing waves fill the ~19.5° Kelvin wedge.',
-      painting: 'A boat, duck, or swan wake always opens at that same angle, whatever the speed.',
       deeper: 'A boat is a moving source of ripples on deep water, where long waves travel faster than short ones (dispersion, ω = √(g·k)). Add up all the wavelets it leaves behind and — by a stationary-phase argument — they always reinforce along a wedge of the same half-angle, about 19.5° (the Kelvin angle), no matter how fast the boat goes. That fixed angle is why every boat, duck, and swan wake shares the same signature shape.',
       formula: {
         expr: 'ω = √(g·k)',

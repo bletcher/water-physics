@@ -48,7 +48,6 @@ export function ShallowWater() {
       eyebrow: 'Shallow Water',
       title: 'Waves onto the shore',
       seeing: 'Swells roll in from the left, slow over the shallows, and break on the beach; curve the shore to make them refract.',
-      painting: 'Near shore, waves line up parallel to the beach and whiten as they break; colour warms to sand.',
       deeper: 'In shallow water a wave’s speed drops with depth — roughly c ∝ √depth. So as a swell reaches the shallows it slows; the part still in deeper water runs ahead, swinging the whole wavefront around to line up with the shore. That turning is refraction. Slowing also shortens and steepens the wave until it piles up and breaks — shoaling.',
       formula: {
         expr: 'c = √(g·d)',

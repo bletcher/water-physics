@@ -32,7 +32,6 @@ export function PaintObstacle() {
       eyebrow: 'Paint Obstacle',
       title: 'Brush a wall, steer the waves',
       seeing: 'Paint any shape and watch waves reflect off it and bend (diffract) around its sides.',
-      painting: 'Water wraps around obstacles — keep the surface continuous behind them, just quieter.',
       deeper: 'An obstacle is just cells held at zero height — a hard wall. Waves reflect off its face, and because waves bend around edges (diffraction) they curl into the sheltered water behind it instead of leaving a crisp shadow. How much they wrap depends on wavelength versus the obstacle’s size: long waves bend around easily, short ones cast a sharper shadow.',
       formula: {
         expr: 'h = 0 at the wall',

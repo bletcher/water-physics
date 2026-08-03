@@ -19,9 +19,9 @@ import { LESSONS } from '../lessons/steps';
 import type { LessonContext } from '../lessons/steps';
 
 /**
- * Learn — a guided path that reveals one idea about water at a time. The concept,
- * the thing to try, and the painting takeaway live in the Guide panel; the Adjust
- * sheet holds only the one or two controls the current step surfaces.
+ * Learn — a guided path that reveals one idea about water at a time. The concept
+ * and the thing to try live in the Guide panel; the Adjust sheet holds only the
+ * one or two controls the current step surfaces.
  */
 export function Learn() {
   const sim = useMemo(() => new WaterSim(320, 180), []);
@@ -70,7 +70,6 @@ export function Learn() {
       eyebrow: `Step ${i + 1} of ${LESSONS.length}`,
       title: step.title,
       seeing: `${step.body} ${step.tryThis}`,
-      painting: step.painting,
       deeper: step.deeper,
       formula: step.formula,
       onPrev: () => setI((v) => Math.max(0, v - 1)),
