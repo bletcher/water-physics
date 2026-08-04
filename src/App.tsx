@@ -71,6 +71,7 @@ function Shell() {
       </main>
 
       <div className="brand fade">
+        <a className="brand-home" href="https://westbrookdataviz.org">← westbrookdataviz.org</a>
         <h1>{room.name}</h1>
         <small>Water Physics</small>
       </div>

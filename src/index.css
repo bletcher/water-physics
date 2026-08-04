@@ -64,6 +64,12 @@ body {
 
 /* brand — quiet, top-left */
 .brand { position: fixed; top: calc(clamp(15px, 3vw, 28px) + env(safe-area-inset-top)); left: calc(clamp(16px, 3vw, 32px) + env(safe-area-inset-left)); z-index: 6; }
+.brand .brand-home {
+  display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 10px;
+  letter-spacing: 0.1em; color: var(--dim); text-decoration: none; margin-bottom: 7px;
+}
+.brand .brand-home:hover { color: var(--verdigris); }
+.brand .brand-home:focus-visible { outline: 2px solid var(--verdigris); outline-offset: 3px; border-radius: 2px; }
 .brand h1 {
   font-family: "Fraunces Variable", serif; font-weight: 500;
   font-size: clamp(17px, 2.3vw, 22px); letter-spacing: 0.01em; color: var(--pearl);
@@ -272,7 +278,16 @@ body {
 .controls {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 14px 22px;
+  align-items: start;
+  gap: 10px 12px;
+}
+
+/* each label + slider sits in its own subtle card, so it's obvious they're a pair */
+.ctl {
+  background: rgba(170, 205, 205, 0.045);
+  border: 1px solid rgba(170, 205, 205, 0.10);
+  border-radius: 10px;
+  padding: 9px 12px 11px;
 }
 
 .ctl label {
@@ -280,7 +295,7 @@ body {
   justify-content: space-between;
   font-size: 12.5px;
   color: var(--text);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .ctl label .val {
