@@ -149,6 +149,20 @@ export function useWaterEngine(
         cover = coverRect(cw, ch);
         if (cover.y > 0.5) { ctx.fillStyle = '#0e1217'; ctx.fillRect(0, 0, cw, ch); }
         ctx.drawImage(off, cover.x, cover.y, sim.W * cover.scale, sim.H * cover.scale);
+        // when the pool has reflecting walls (not infinite space), draw a visible
+        // tank frame so the "infinite space" toggle clearly does something even on
+        // a calm surface — infinite/open water shows no frame.
+        if (sim.boundary === 'walls') {
+          const sw = sim.W * cover.scale, sh = sim.H * cover.scale;
+          const lw = Math.max(2, Math.min(cw, ch) * 0.005);
+          ctx.save();
+          ctx.strokeStyle = 'rgba(162,198,208,0.55)';
+          ctx.lineWidth = lw;
+          ctx.shadowColor = 'rgba(0,0,0,0.5)';   // soft inner shadow → reads as a raised rim
+          ctx.shadowBlur = lw * 2.5;
+          ctx.strokeRect(cover.x + lw / 2, cover.y + lw / 2, sw - lw, sh - lw);
+          ctx.restore();
+        }
       } else {
         // draw the surface as a receding plane, one horizontal strip per screen row
         const W = sim.W, H = sim.H, denom = 1 + beta;
