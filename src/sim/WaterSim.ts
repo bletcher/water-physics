@@ -40,12 +40,6 @@ export class WaterSim {
   /** edge behaviour: reflecting walls, or open (infinite) water */
   boundary: Boundary = 'open';
   /**
-   * When open, also run an absorbing sponge near the edges so outgoing waves are
-   * soaked up at any angle (the Mur boundary alone leaks a little at a slant).
-   * Turned off where energy is injected right at an edge (e.g. shoreline swells).
-   */
-  sponge = true;
-  /**
    * Optional per-cell c² for spatially-varying wave speed (shallow water:
    * c ∝ √depth ⇒ c² ∝ depth). When null, the scalar `c` is used everywhere.
    */
@@ -165,31 +159,11 @@ export class WaterSim {
         hNext[i] = (2 * hCurr[i] - hPrev[i] + c2 * lap) * damp;
       }
     }
-    // soak up outgoing waves in a border band, then handle the very edge cells.
-    // Together these make an open pool read as truly infinite — no bounce-back.
-    if (this.boundary === 'open' && this.sponge) this.absorbEdges(hNext);
     this.applyBoundary();
     // rotate buffers
     this.hPrev = hCurr;
     this.hCurr = hNext;
     this.hNext = hPrev;
-  }
-
-  /**
-   * Absorbing sponge: progressively damp a band of cells near the four edges so
-   * outgoing ripples fade out instead of reflecting — and unlike the first-order
-   * Mur boundary, it works at any angle of incidence. Strongest at the very edge,
-   * easing to nothing at the inner edge of the band so the ramp itself doesn't
-   * reflect.
-   */
-  private absorbEdges(h: Float32Array): void {
-    const { W, H } = this;
-    const B = 16;
-    for (let bnd = 0; bnd < B; bnd++) {
-      const f = 0.80 + 0.20 * (bnd / B);
-      for (let x = 0; x < W; x++) { h[bnd * W + x] *= f; h[(H - 1 - bnd) * W + x] *= f; }
-      for (let y = 0; y < H; y++) { h[y * W + bnd] *= f; h[y * W + (W - 1 - bnd)] *= f; }
-    }
   }
 
   /**
@@ -252,23 +226,41 @@ export class WaterSim {
    * Set the edge cells of hNext after the interior update.
    *  - 'walls': zero-gradient (Neumann) copy of the interior neighbour → the
    *    wave reflects, as off a tank wall.
-   *  - 'open': Mur first-order absorbing boundary — outgoing waves leave with
-   *    almost no reflection, so the pool reads as infinite (no border effects).
+   *  - 'open': Mur *second-order* absorbing boundary — outgoing waves leave with
+   *    very little reflection even at a slant (a first-order version bounces
+   *    oblique ripples back), so the pool reads as genuinely infinite. It needs
+   *    the two-steps-ago field, so the transverse terms use hPrev/hCurr.
    */
   private applyBoundary(): void {
-    const { W, H, hCurr, hNext } = this;
+    const { W, H, hCurr, hPrev, hNext } = this;
     if (this.boundary === 'open') {
-      const K = (this.c - 1) / (this.c + 1); // Mur coefficient, effective Courant ≈ c
-      for (let y = 0; y < H; y++) {
-        const l = y * W, r = y * W + (W - 1);
-        hNext[l] = hCurr[l + 1] + K * (hNext[l + 1] - hCurr[l]);
-        hNext[r] = hCurr[r - 1] + K * (hNext[r - 1] - hCurr[r]);
+      const cc = this.c;
+      const K1 = (cc - 1) / (cc + 1);       // ≡ first-order Mur coefficient
+      const K2 = 2 / (cc + 1);
+      const K3 = (cc * cc) / (2 * (cc + 1)); // weights the along-edge curvature (oblique term)
+      // left & right columns (transverse direction is y)
+      for (let y = 1; y < H - 1; y++) {
+        const l = y * W, ln = l + 1;
+        hNext[l] = -hPrev[ln] + K1 * (hNext[ln] + hPrev[l]) + K2 * (hCurr[l] + hCurr[ln])
+          + K3 * (hCurr[l + W] - 2 * hCurr[l] + hCurr[l - W] + hCurr[ln + W] - 2 * hCurr[ln] + hCurr[ln - W]);
+        const r = l + W - 1, rn = r - 1;
+        hNext[r] = -hPrev[rn] + K1 * (hNext[rn] + hPrev[r]) + K2 * (hCurr[r] + hCurr[rn])
+          + K3 * (hCurr[r + W] - 2 * hCurr[r] + hCurr[r - W] + hCurr[rn + W] - 2 * hCurr[rn] + hCurr[rn - W]);
       }
-      for (let x = 0; x < W; x++) {
-        const t = x, b = (H - 1) * W + x;
-        hNext[t] = hCurr[t + W] + K * (hNext[t + W] - hCurr[t]);
-        hNext[b] = hCurr[b - W] + K * (hNext[b - W] - hCurr[b]);
+      // top & bottom rows (transverse direction is x)
+      for (let x = 1; x < W - 1; x++) {
+        const t = x, tn = x + W;
+        hNext[t] = -hPrev[tn] + K1 * (hNext[tn] + hPrev[t]) + K2 * (hCurr[t] + hCurr[tn])
+          + K3 * (hCurr[t + 1] - 2 * hCurr[t] + hCurr[t - 1] + hCurr[tn + 1] - 2 * hCurr[tn] + hCurr[tn - 1]);
+        const b = (H - 1) * W + x, bn = b - W;
+        hNext[b] = -hPrev[bn] + K1 * (hNext[bn] + hPrev[b]) + K2 * (hCurr[b] + hCurr[bn])
+          + K3 * (hCurr[b + 1] - 2 * hCurr[b] + hCurr[b - 1] + hCurr[bn + 1] - 2 * hCurr[bn] + hCurr[bn - 1]);
       }
+      // four corners: fall back to first-order Mur against the diagonal neighbour
+      hNext[0] = hCurr[W + 1] + K1 * (hNext[W + 1] - hCurr[0]);
+      hNext[W - 1] = hCurr[2 * W - 2] + K1 * (hNext[2 * W - 2] - hCurr[W - 1]);
+      hNext[(H - 1) * W] = hCurr[(H - 2) * W + 1] + K1 * (hNext[(H - 2) * W + 1] - hCurr[(H - 1) * W]);
+      hNext[H * W - 1] = hCurr[(H - 1) * W - 2] + K1 * (hNext[(H - 1) * W - 2] - hCurr[H * W - 1]);
     } else {
       for (let y = 0; y < H; y++) {
         const l = y * W, r = y * W + (W - 1);
